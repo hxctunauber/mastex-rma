@@ -3,15 +3,19 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MASTEX RMA System (v122.15 Final JS)</title>
+    <title>MASTEX RMA System (v122.16 Final JS)</title>
     
-    <!-- Libraries -->
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- React & ReactDOM -->
     <script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
     <script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+    
+    <!-- Babel for JSX -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
     
-    <!-- Firebase Compat Libraries -->
+    <!-- Firebase -->
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
     
@@ -44,9 +48,8 @@
 </head>
 <body>
     <div id="root"></div>
-    <div id="loading-screen"><div>SYSTEM INITIALIZING... v122.15</div></div>
+    <div id="loading-screen"><div>SYSTEM INITIALIZING... v122.16</div></div>
     <div id="error-overlay"></div>
-    
     <script>
         window.onerror = function(msg, url, line, col, error) {
             document.getElementById('loading-screen').style.display = 'none';
@@ -55,13 +58,11 @@
             overlay.innerHTML = `<h2>System Error</h2><p>${msg}</p><p>${url}:${line}:${col}</p><button onclick="localStorage.clear();location.reload()" style="margin-top:20px;padding:10px;background:#900;color:#fff;border:none;">HARD RESET</button>`;
         };
     </script>
-
     <script type="text/babel">
-        // ==========================================
-        // 1. GLOBAL VARIABLES (Plain JS)
-        // ==========================================
+        // --- PURE JS IMPLEMENTATION (No TypeScript Types) ---
         const { useState, useEffect, useRef, Fragment } = React;
 
+        // CONSTANTS
         const PRESET_FIREBASE_CONFIG = {
           apiKey: "AIzaSyDm1zPY6DHErybLZ-MfJOsLEywShNBcB_c",
           authDomain: "mastex-205a8.firebaseapp.com",
@@ -125,10 +126,7 @@
             INVENTORY: 'https://images.unsplash.com/photo-1558494949-ef526bca4899?q=80&w=2000'
         };
 
-        // ==========================================
-        // 2. COMPONENTS (Plain JS Functions)
-        // ==========================================
-        
+        // COMPONENTS
         class ErrorBoundary extends React.Component {
             constructor(props) { super(props); this.state = { hasError: false, error: null }; }
             static getDerivedStateFromError(error) { return { hasError: true, error }; }
@@ -194,17 +192,12 @@
             </label>
         );
 
-        const DualText = ({ zh, en, className = "" }) => (
-            <span className={className}>
-                <span className="font-bold text-lg">{zh}</span>
-                <span className="ml-2 text-xs font-mono-tech text-gray-500 uppercase tracking-wider font-normal">{en}</span>
-            </span>
-        );
-
         const SectionHeader = ({ zh, en, icon, color = "text-white" }) => (
             <div className="flex items-center gap-3 mb-6 border-b border-white/10 pb-3">
                 <span className={color}><Icon name={icon} size={24} /></span>
-                <h3 className={`text-lg font-bold ${color}`}><DualText zh={zh} en={en} /></h3>
+                <h3 className={`text-lg font-bold ${color}`}>
+                    <span>{zh}</span><span className="ml-2 text-xs font-mono-tech text-gray-500 uppercase tracking-wider font-normal">{en}</span>
+                </h3>
             </div>
         );
 
@@ -308,7 +301,6 @@
             if (!isOpen) return null;
 
             const handleSaveAll = () => { onSave(brands, dealers, accessories, theme); if (fbConfig.apiKey) onSaveFirebase(fbConfig); else if (!fbConfig.apiKey) onSaveFirebase(null); };
-            
             const handleAddBrand = () => { if (!newBrandName.trim() || brands[newBrandName]) return; setBrands(p => ({ ...p, [newBrandName]: { models: [], commonIssues: [] } })); setSelectedBrand(newBrandName); setNewBrandName(''); };
             const handleDeleteBrand = (b) => { if (!confirm(`Delete ${b}?`)) return; setBrands(p => { const n = { ...p }; delete n[b]; return n; }); if (selectedBrand === b) setSelectedBrand(''); };
             const handleAddModel = () => { if (!selectedBrand || !newModelName.trim() || brands[selectedBrand].models.includes(newModelName)) return; setBrands(p => ({ ...p, [selectedBrand]: { ...p[selectedBrand], models: [...p[selectedBrand].models, newModelName] } })); setNewModelName(''); };
