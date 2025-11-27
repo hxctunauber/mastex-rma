@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MASTEX RMA System (v122.16 Final JS)</title>
+    <title>MASTEX RMA System (v122.17 Final JS)</title>
     
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -48,8 +48,9 @@
 </head>
 <body>
     <div id="root"></div>
-    <div id="loading-screen"><div>SYSTEM INITIALIZING... v122.16</div></div>
+    <div id="loading-screen"><div>SYSTEM INITIALIZING... v122.17</div></div>
     <div id="error-overlay"></div>
+    
     <script>
         window.onerror = function(msg, url, line, col, error) {
             document.getElementById('loading-screen').style.display = 'none';
@@ -58,8 +59,9 @@
             overlay.innerHTML = `<h2>System Error</h2><p>${msg}</p><p>${url}:${line}:${col}</p><button onclick="localStorage.clear();location.reload()" style="margin-top:20px;padding:10px;background:#900;color:#fff;border:none;">HARD RESET</button>`;
         };
     </script>
+
     <script type="text/babel">
-        // --- PURE JS IMPLEMENTATION (No TypeScript Types) ---
+        // --- PURE JS IMPLEMENTATION ---
         const { useState, useEffect, useRef, Fragment } = React;
 
         // CONSTANTS
@@ -192,12 +194,17 @@
             </label>
         );
 
+        const DualText = ({ zh, en, className = "" }) => (
+            <span className={className}>
+                <span className="font-bold text-lg">{zh}</span>
+                <span className="ml-2 text-xs font-mono-tech text-gray-500 uppercase tracking-wider font-normal">{en}</span>
+            </span>
+        );
+
         const SectionHeader = ({ zh, en, icon, color = "text-white" }) => (
             <div className="flex items-center gap-3 mb-6 border-b border-white/10 pb-3">
                 <span className={color}><Icon name={icon} size={24} /></span>
-                <h3 className={`text-lg font-bold ${color}`}>
-                    <span>{zh}</span><span className="ml-2 text-xs font-mono-tech text-gray-500 uppercase tracking-wider font-normal">{en}</span>
-                </h3>
+                <h3 className={`text-lg font-bold ${color}`}><DualText zh={zh} en={en} /></h3>
             </div>
         );
 
