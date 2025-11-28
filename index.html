@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MASTEX RMA System (v122.19 Final)</title>
+    <title>MASTEX RMA System (v122.20 Final)</title>
     
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -15,7 +15,7 @@
     <!-- Babel for JSX -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
     
-    <!-- Firebase Compat -->
+    <!-- Firebase Compat Libraries -->
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
     
@@ -45,10 +45,22 @@
         .animate-fade-in { animation: fadeIn 0.3s ease-out; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
     </style>
+<script type="importmap">
+{
+  "imports": {
+    "react/": "https://aistudiocdn.com/react@^19.2.0/",
+    "react": "https://aistudiocdn.com/react@^19.2.0",
+    "@vitejs/plugin-react": "https://aistudiocdn.com/@vitejs/plugin-react@^5.1.1",
+    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
+    "vite": "https://aistudiocdn.com/vite@^7.2.4",
+    "firebase/": "https://aistudiocdn.com/firebase@^12.6.0/"
+  }
+}
+</script>
 </head>
 <body>
     <div id="root"></div>
-    <div id="loading-screen"><div>SYSTEM INITIALIZING... v122.19</div></div>
+    <div id="loading-screen"><div>SYSTEM INITIALIZING... v122.20</div></div>
     <div id="error-overlay"></div>
     
     <script>
@@ -61,76 +73,38 @@
     </script>
 
     <script type="text/babel">
-        // --- 1. CONSTANTS & CONFIG (No exports) ---
         const { useState, useEffect, useRef, Fragment } = React;
 
-        const PRESET_FIREBASE_CONFIG = {
-          apiKey: "AIzaSyDm1zPY6DHErybLZ-MfJOsLEywShNBcB_c",
-          authDomain: "mastex-205a8.firebaseapp.com",
-          projectId: "mastex-205a8",
-          storageBucket: "mastex-205a8.firebasestorage.app",
-          messagingSenderId: "669513814730",
-          appId: "1:669513814730:web:842f3be1c0557069151a33",
-          measurementId: "G-4FKPEYMCRP"
-        };
-
-        const INITIAL_BRANDS = {
-            Keychron: { models: ['B36','B6 Pro','K10 Max','K4 QMK','K3 QMK','K2 HE','K4 HE','K8 HE','K10 HE','K1 Max','K2 Max','K3 Max','K5 Max','K8 Max','K10 Max ZMK','K2 QMK','K5 QMK','K8 QMK','K10 QMK','Q1 Max','Q3 Max','Q6 Max','Q10 Max','Q12 Max','Q0 Max','Q1','Q2','Q3','V1 Max','V3 Max','V5 Max','V6 Max','V10 Max','B1 Pro','B2 Pro'], commonIssues: ['藍牙配對失敗','2.4G 接收器無反應','喚醒延遲','旋鈕失效','電池膨脹','按鍵連點'] },
-            NuPhy: { models: ['Air75 V3','Kick75','Air75 HE','Halo96 V2','Gem80','Halo75 V2','Air75 V2'], commonIssues: ['2.4G 連線不穩','腳架斷裂','RGB 死燈','矮軸觸發異常'] },
-            Yunzii: { models: ['AL66','AL71','AL75','B75','C68','X75'], commonIssues: ['驅動程式無法偵測','燈光異常'] }
-        };
+        // --- CONSTANTS ---
+        const PRESET_FIREBASE_CONFIG = { apiKey: "AIzaSyDm1zPY6DHErybLZ-MfJOsLEywShNBcB_c", authDomain: "mastex-205a8.firebaseapp.com", projectId: "mastex-205a8", storageBucket: "mastex-205a8.firebasestorage.app", messagingSenderId: "669513814730", appId: "1:669513814730:web:842f3be1c0557069151a33", measurementId: "G-4FKPEYMCRP" };
+        const INITIAL_BRANDS = { Keychron: { models: ['B36','B6 Pro','K10 Max','K4 QMK','K3 QMK','K2 HE','K4 HE','K8 HE','K10 HE','K1 Max','K2 Max','K3 Max','K5 Max','K8 Max','K10 Max ZMK','K2 QMK','K5 QMK','K8 QMK','K10 QMK','Q1 Max','Q3 Max','Q6 Max','Q10 Max','Q12 Max','Q0 Max','Q1','Q2','Q3','V1 Max','V3 Max','V5 Max','V6 Max','V10 Max','B1 Pro','B2 Pro'], commonIssues: ['藍牙配對失敗','2.4G 接收器無反應','喚醒延遲','旋鈕失效','電池膨脹','按鍵連點'] }, NuPhy: { models: ['Air75 V3','Kick75','Air75 HE','Halo96 V2','Gem80','Halo75 V2','Air75 V2'], commonIssues: ['2.4G 連線不穩','腳架斷裂','RGB 死燈','矮軸觸發異常'] }, Yunzii: { models: ['AL66','AL71','AL75','B75','C68','X75'], commonIssues: ['驅動程式無法偵測','燈光異常'] } };
         const INITIAL_ACCESSORIES = ['原廠傳輸線','拔軸器','拔鍵器','2.4G 接收器','轉接頭 (A to C)','防塵蓋'];
         const INITIAL_COURIERS = ['新竹物流 (HCT)','7-11 店到店','全家','順豐速運 (SF)'];
         const INITIAL_SOURCES = ['蝦皮 (Keychron)','蝦皮 (NuPhy)','官網','經銷商','MOMO','PChome'];
         const INITIAL_DEALERS = ['PC Party','改裝軍團','硬派精璽','原價屋','良興','一統電競','宇星'];
         const CONDITIONS = ['全新','近全新','良好','有使用痕跡','輕微瑕疵','明顯磨損'];
-        
-        const INITIAL_STATE = {
-            id: '', rmaNumber: '', refNumber: '', customerType: 'C', dealerName: '', creationDate: '',
-            isReceived: false, receivedDate: '', purchaseDate: '', source: '', csAction: null,
-            tmsImported: false, endUserName: '', endUserPhone: '', endUserEmail: '',
-            recipientName: '', recipientPhone: '', recipientAddress: '', recipientBrand: '', recipientModel: '',
-            returnDate: '', customerName: '', customerContact: '', brand: 'Keychron', model: '',
-            serialNumber: '', warrantyStatus: '保固內', productCondition: '有使用痕跡', accessories: [],
-            customerDescription: '', reportedIssue: '',
-            diagnosis: { physicalCheck: 'pending', connectionCheck: 'pending', batteryCheck: 'pending', switchCheck: 'pending' },
-            repairAction: '', partsReplaced: '', technicianNotes: '', status: '待收件',
-            resolution: '', defectiveLoc: '', returnTarget: '', trackingNumber: '', courier: '新竹物流 (HCT)',
-            isBorrowed: false, displayLog: []
-        };
-
-        const STATUS_STYLES = {
-            '待收件': 'text-gray-400 border-gray-600', 'Pending': 'text-gray-400 border-gray-600',
-            '檢測中': 'text-white border-white shadow-[0_0_8px_rgba(255,255,255,0.5)]', 'Checking': 'text-white border-white shadow-[0_0_8px_rgba(255,255,255,0.5)]',
-            '待料中': 'text-yellow-400 border-yellow-600 border-dashed', 'Waiting Parts': 'text-yellow-400 border-yellow-600 border-dashed',
-            '新品待寄出': 'text-yellow-400 border-yellow-500 font-bold', 'Pending Ship': 'text-yellow-400 border-yellow-500 font-bold',
-            '新品已寄出': 'text-green-400 border-green-500 font-bold', 'Shipped': 'text-green-400 border-green-500 font-bold',
-            '完修待寄回': 'text-blue-400 border-blue-500 font-bold', 'Repaired': 'text-blue-400 border-blue-500 font-bold',
-            '待入庫': 'text-teal-400 border-teal-500 font-bold',
-            '已寄回': 'text-gray-300 border-double border-white', 'Returned': 'text-gray-300 border-double border-white',
-            '修復入庫': 'text-teal-400 border-teal-500', 'Restocked': 'text-teal-400 border-teal-500',
-            '已寄原廠': 'text-gray-400 border-dotted border-gray-500', 'Shipped to Brand': 'text-gray-400 border-dotted border-gray-500',
-            '待寄原廠': 'text-red-500 border-red-800', 'To Brand': 'text-red-500 border-red-800'
-        };
-
+        const STATUS_STYLES = { '待收件': 'text-gray-400 border-gray-600', 'Pending': 'text-gray-400 border-gray-600', '檢測中': 'text-white border-white shadow-[0_0_8px_rgba(255,255,255,0.5)]', 'Checking': 'text-white border-white shadow-[0_0_8px_rgba(255,255,255,0.5)]', '待料中': 'text-yellow-400 border-yellow-600 border-dashed', 'Waiting Parts': 'text-yellow-400 border-yellow-600 border-dashed', '新品待寄出': 'text-yellow-400 border-yellow-500 font-bold', 'Pending Ship': 'text-yellow-400 border-yellow-500 font-bold', '新品已寄出': 'text-green-400 border-green-500 font-bold', 'Shipped': 'text-green-400 border-green-500 font-bold', '完修待寄回': 'text-blue-400 border-blue-500 font-bold', 'Repaired': 'text-blue-400 border-blue-500 font-bold', '待入庫': 'text-teal-400 border-teal-500 font-bold', '已寄回': 'text-gray-300 border-double border-white', 'Returned': 'text-gray-300 border-double border-white', '修復入庫': 'text-teal-400 border-teal-500', 'Restocked': 'text-teal-400 border-teal-500', '已寄原廠': 'text-gray-400 border-dotted border-gray-500', 'Shipped to Brand': 'text-gray-400 border-dotted border-gray-500', '待寄原廠': 'text-red-500 border-red-800', 'To Brand': 'text-red-500 border-red-800' };
         const DEFECTIVE_LOC_LABELS = { 'warehouse': '留倉 INVENTORY', 'waiting_parts': '待料中 PARTS', 'brand_rma': '待寄原廠 TO BRAND', 'shipped_brand': '已寄原廠 SHIPPED', 'display': '展示機 DISPLAY' };
         const DEFECTIVE_LOC_STYLES = { 'warehouse': 'text-teal-400 border-teal-500 bg-teal-900/10', 'waiting_parts': 'text-yellow-400 border-yellow-500 border-dashed bg-yellow-900/10', 'brand_rma': 'text-red-400 border-red-500 bg-red-900/10', 'shipped_brand': 'text-gray-400 border-gray-500 border-dotted', 'display': 'text-blue-400 border-blue-500' };
         const CHECKLIST_LABELS = { physicalCheck: '外觀檢查 Physical', connectionCheck: '連線測試 Connection', batteryCheck: '電池狀況 Battery', switchCheck: '軸體觸發 Switch' };
         const CHECKLIST_OPTIONS = { pending: '待測 Pending', pass: '通過 PASS', fail: '失敗 FAIL', na: '不適用 N/A' };
-        
-        const DEFAULT_THEME_IMAGES = {
-            CS: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=2072',
-            URGENT: 'https://images.unsplash.com/photo-1597424214791-722a57ed6781?q=80&w=2070',
-            PENDING: 'https://images.unsplash.com/photo-1518770660439-4636190af475?q=80&w=2070',
-            SHIPPING: 'https://images.unsplash.com/photo-1565514020176-db7923700b8c?q=80&w=2000',
-            HISTORY: 'https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?q=80&w=2070',
-            INVENTORY: 'https://images.unsplash.com/photo-1558494949-ef526bca4899?q=80&w=2000'
-        };
+        const DEFAULT_THEME_IMAGES = { CS: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=2072', URGENT: 'https://images.unsplash.com/photo-1597424214791-722a57ed6781?q=80&w=2070', PENDING: 'https://images.unsplash.com/photo-1518770660439-4636190af475?q=80&w=2070', SHIPPING: 'https://images.unsplash.com/photo-1565514020176-db7923700b8c?q=80&w=2000', HISTORY: 'https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?q=80&w=2070', INVENTORY: 'https://images.unsplash.com/photo-1558494949-ef526bca4899?q=80&w=2000' };
 
-        // --- 2. COMPONENTS (Converted to Standard JS) ---
-        
+        const INITIAL_STATE = { id: '', rmaNumber: '', refNumber: '', customerType: 'C', dealerName: '', creationDate: '', isReceived: false, receivedDate: '', purchaseDate: '', source: '', csAction: null, tmsImported: false, endUserName: '', endUserPhone: '', endUserEmail: '', recipientName: '', recipientPhone: '', recipientAddress: '', recipientBrand: '', recipientModel: '', returnDate: '', customerName: '', customerContact: '', brand: 'Keychron', model: '', serialNumber: '', warrantyStatus: '保固內', productCondition: '有使用痕跡', accessories: [], customerDescription: '', reportedIssue: '', diagnosis: { physicalCheck: 'pending', connectionCheck: 'pending', batteryCheck: 'pending', switchCheck: 'pending' }, repairAction: '', partsReplaced: '', technicianNotes: '', status: '待收件', resolution: '', defectiveLoc: '', returnTarget: '', trackingNumber: '', courier: '新竹物流 (HCT)', isBorrowed: false, displayLog: [] };
+
+        // --- COMPONENTS ---
+        class ErrorBoundary extends React.Component {
+            constructor(props) { super(props); this.state = { hasError: false, error: null }; }
+            static getDerivedStateFromError(error) { return { hasError: true, error }; }
+            render() {
+                if (this.state.hasError) {
+                    return <div className="p-8 text-red-500 font-mono"><h1>System Crash</h1><p>{this.state.error?.toString()}</p><button onClick={() => window.location.reload()} className="bg-white text-black p-2 mt-4">Reload</button></div>;
+                }
+                return this.props.children;
+            }
+        }
+
         const Icon = ({ name, size = 20, className = "" }) => {
-            // Icons mapping directly inside function to avoid scope issues
             const icons = {
                 Plus: <path d="M5 12h14M12 5v14" />,
                 Search: <React.Fragment><circle cx="11" cy="11" r="8" /><path d="m21 21-4.3-4.3" /></React.Fragment>,
@@ -222,7 +196,7 @@
                 backgroundColor: Math.abs(currentOffset) > 20 || isDeleting ? '#18181b' : 'transparent'
             };
             return (
-                <tr className={`${className} relative overflow-hidden`} style={style} onTouchStart={handleTouchStart} onTouchMove={handleTouchMove} onTouchEnd={handleTouchEnd} onClick={(e) => { if (Math.abs(offsetX) > 5) return; onClick(e); }}>
+                <tr className={`${className} relative overflow-hidden`} style={style} onTouchStart={handleTouchStart} onTouchMove={handleTouchMove} onTouchEnd={handleTouchEnd} onClick={(e) => { if (Math.abs(offsetX) > 5) return; onClick(e) }}>
                     {children}
                     <div className="absolute top-0 bottom-0 flex items-center justify-center gap-2 z-30 h-full border-l border-zinc-700 bg-zinc-900" style={{ right: '-160px', width: '160px', visibility: (isDeleting || offsetX < 0) ? 'visible' : 'hidden' }}>
                         <button onClick={(e) => { e.stopPropagation(); onConfirm() }} className="bg-red-600 hover:bg-red-500 text-white px-4 py-1.5 rounded text-xs font-bold transition-colors">確定</button>
@@ -322,7 +296,7 @@
                             {activeTab === 'brands' && <div className="flex flex-1 w-full h-full"><div className="w-1/3 border-r border-zinc-700 flex flex-col bg-black/20"><div className="p-4 bg-zinc-800/50 border-b border-zinc-700"><div className="flex gap-2"><input className="flex-1 bg-black border border-zinc-600 rounded px-2 py-1 text-white text-sm" placeholder="New Brand..." value={newBrandName} onChange={e => setNewBrandName(e.target.value)} /><button onClick={handleAddBrand} className="bg-blue-600 text-white px-3 py-1 rounded"><Icon name="Plus" size={16} /></button></div></div><div className="flex-1 overflow-y-auto p-2 space-y-1">{Object.keys(brands).map(b => (<div key={b} onClick={() => setSelectedBrand(b)} className={`flex justify-between items-center px-4 py-3 rounded cursor-pointer ${selectedBrand === b ? 'bg-zinc-700 text-white font-bold border-l-4 border-blue-500' : 'text-gray-400 hover:bg-zinc-800'}`}><span>{b}</span><div onClick={(e) => { e.stopPropagation(); handleDeleteBrand(b); }} className="p-2 hover:text-red-500"><Icon name="Trash2" size={16} /></div></div>))}</div></div><div className="flex-1 flex flex-col bg-zinc-900 p-4">{selectedBrand ? (<React.Fragment><div className="flex gap-2 mb-4"><input className="flex-1 bg-black border border-zinc-600 rounded px-3 py-2 text-white" placeholder="Add Model..." value={newModelName} onChange={e => setNewModelName(e.target.value)} /><button onClick={handleAddModel} className="bg-green-600 text-white px-4 py-2 rounded font-bold">ADD</button></div><div className="grid grid-cols-2 md:grid-cols-3 gap-3 overflow-y-auto content-start">{brands[selectedBrand].models.map(m => (<div key={m} className="bg-black border border-zinc-700 rounded px-3 py-2 flex justify-between items-center group"><span className="text-gray-300 text-sm">{m}</span><button onClick={() => handleDeleteModel(m)} className="text-zinc-600 hover:text-red-500 opacity-0 group-hover:opacity-100"><Icon name="X" size={14} /></button></div>))}</div></React.Fragment>) : <p className="text-center text-gray-500 mt-10">Select a brand</p>}</div></div>}
                             {activeTab === 'dealers' && <div className="w-full flex flex-col bg-zinc-900 p-6"><div className="flex gap-2 mb-6 max-w-xl mx-auto w-full"><input className="flex-1 bg-black border border-zinc-600 rounded px-4 py-3 text-white" placeholder="New Dealer Name..." value={newDealerName} onChange={e => setNewDealerName(e.target.value)} /><button onClick={handleAddDealer} className="bg-purple-600 hover:bg-purple-500 text-white px-6 py-2 rounded font-bold">ADD DEALER</button></div><div className="flex-1 overflow-y-auto max-w-4xl mx-auto w-full"><div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">{dealers.map(d => (<div key={d} className="bg-black border border-zinc-700 rounded p-4 flex justify-between items-center group hover:border-zinc-500 transition-colors"><span className="text-gray-200 font-bold">{d}</span><button onClick={() => handleDeleteDealer(d)} className="text-zinc-600 hover:text-red-500 p-2"><Icon name="Trash2" size={18} /></button></div>))}</div></div></div>}
                             {activeTab === 'accessories' && <div className="w-full flex flex-col bg-zinc-900 p-6"><div className="flex gap-2 mb-6 max-w-xl mx-auto w-full"><input className="flex-1 bg-black border border-zinc-600 rounded px-4 py-3 text-white" placeholder="New Accessory..." value={newAccessoryName} onChange={e => setNewAccessoryName(e.target.value)} /><button onClick={handleAddAccessory} className="bg-teal-600 hover:bg-teal-500 text-white px-6 py-2 rounded font-bold">ADD ACCESSORY</button></div><div className="flex-1 overflow-y-auto max-w-4xl mx-auto w-full"><div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">{accessories.map(a => (<div key={a} className="bg-black border border-zinc-700 rounded p-4 flex justify-between items-center group hover:border-zinc-500 transition-colors"><span className="text-gray-200 font-bold">{a}</span><button onClick={() => handleDeleteAccessory(a)} className="text-zinc-600 hover:text-red-500 p-2"><Icon name="Trash2" size={18} /></button></div>))}</div></div></div>}
-                            {activeTab === 'theme' && <div className="w-full flex flex-col bg-zinc-900 p-8 overflow-y-auto"><div className="max-w-3xl mx-auto w-full"><div className="mb-6 flex justify-between items-center"><div><h4 className="text-white font-bold text-lg mb-1">自訂儀表板背景 CUSTOM DASHBOARD THEME</h4><p className="text-gray-400 text-xs">輸入圖片網址 (URL) 即可更換背景。支援 Unsplash, Imgur 等連結。</p></div><button onClick={() => setTheme(DEFAULT_THEME_IMAGES)} className="flex items-center gap-2 px-4 py-2 bg-zinc-800 hover:bg-zinc-700 border border-zinc-600 rounded text-xs text-gray-300"><Icon name="RefreshCcw" size={14} /> 恢復預設 RESET</button></div><div className="grid grid-cols-1 md:grid-cols-2 gap-6">{Object.keys(DEFAULT_THEME_IMAGES).map(key => (<div key={key} className="bg-black border border-zinc-800 p-4 rounded-lg flex flex-col gap-3"><div className="flex justify-between items-center"><label className="text-xs font-bold text-gray-400 block">{THEME_LABELS[key]}</label></div><div className="flex gap-3"><div className="w-20 h-20 bg-zinc-900 rounded border border-zinc-700 overflow-hidden flex-shrink-0"><img src={theme[key]} alt={key} className="w-full h-full object-cover" onError={(e) => e.target.style.display = 'none'} onLoad={(e) => e.target.style.display = 'block'} /></div><textarea className="flex-1 bg-zinc-900 border border-zinc-700 rounded p-2 text-xs text-gray-300 break-all resize-none focus:border-blue-500 outline-none" rows={3} value={theme[key]} onChange={e => setTheme(prev => { return { ...prev, [key]: e.target.value }; })} placeholder="https://..." /></div></div>))}</div></div></div>}
+                            {activeTab === 'theme' && <div className="w-full flex flex-col bg-zinc-900 p-8 overflow-y-auto"><div className="max-w-3xl mx-auto w-full"><div className="mb-6 flex justify-between items-center"><div><h4 className="text-white font-bold text-lg mb-1">自訂儀表板背景 CUSTOM DASHBOARD THEME</h4><p className="text-gray-400 text-xs">輸入圖片網址 (URL) 即可更換背景。支援 Unsplash, Imgur 等連結。</p></div><button onClick={() => setTheme(DEFAULT_THEME_IMAGES)} className="flex items-center gap-2 px-4 py-2 bg-zinc-800 hover:bg-zinc-700 border border-zinc-600 rounded text-xs text-gray-300"><Icon name="RefreshCcw" size={14} /> 恢復預設 RESET</button></div><div className="grid grid-cols-1 md:grid-cols-2 gap-6">{Object.keys(DEFAULT_THEME_IMAGES).map(key => (<div key={key} className="bg-black border border-zinc-800 p-4 rounded-lg flex flex-col gap-3"><div className="flex justify-between items-center"><label className="text-xs font-bold text-gray-400 block">{THEME_LABELS[key]}</label></div><div className="flex gap-3"><div className="w-20 h-20 bg-zinc-900 rounded border border-zinc-700 overflow-hidden flex-shrink-0"><img src={theme[key]} alt={key} className="w-full h-full object-cover" onError={(e) => e.target.style.display = 'none'} onLoad={(e) => e.target.style.display = 'block'} /></div><textarea className="flex-1 bg-zinc-900 border border-zinc-700 rounded p-2 text-xs text-gray-300 break-all resize-none focus:border-blue-500 outline-none" rows={3} value={theme[key]} onChange={e => setTheme(prev => ({ ...(prev || DEFAULT_THEME_IMAGES), [key]: e.target.value }))} placeholder="https://..." /></div></div>))}</div></div></div>}
                             {activeTab === 'cloud' && (
                                 <div className="w-full flex flex-col bg-zinc-900 p-8 overflow-y-auto">
                                     <div className="max-w-2xl mx-auto w-full">
@@ -342,338 +316,88 @@
             );
         };
 
-        const App = () => {
-            const [view, setView] = useState('dashboard');
-            const [rmas, setRmas] = useState([]);
-            const [currentRMA, setCurrentRMA] = useState(INITIAL_STATE);
-            const [searchTerm, setSearchTerm] = useState('');
-            const [filterType, setFilterType] = useState('All');
-            const [quickFilter, setQuickFilter] = useState('ALL');
-            const [activeZone, setActiveZone] = useState('ALL');
-            const [isDirty, setIsDirty] = useState(false);
-            const [brandsConfig, setBrandsConfig] = useState(INITIAL_BRANDS);
-            const [dealersConfig, setDealersConfig] = useState(INITIAL_DEALERS);
-            const [accessoriesConfig, setAccessoriesConfig] = useState(INITIAL_ACCESSORIES);
-            const [themeImages, setThemeImages] = useState(DEFAULT_THEME_IMAGES);
-            const [db, setDb] = useState(null);
-            const [isCloudMode, setIsCloudMode] = useState(false);
-            const fileInputRef = useRef(null);
-            const [shipModal, setShipModal] = useState({ open: false, rma: null, isBrand: false, courier: '', tracking: '' });
-            const [deletingId, setDeletingId] = useState(null);
-            const [dataModalOpen, setDataModalOpen] = useState(false);
-            const [configModalOpen, setConfigModalOpen] = useState(false);
-            const [confirmState, setConfirmState] = useState({ open: false, action: () => { } });
-
-            useEffect(() => {
-                const savedConfig = localStorage.getItem('mastex_brands_config');
-                if (savedConfig) try { setBrandsConfig(JSON.parse(savedConfig)); } catch (e) { }
-                const savedDealers = localStorage.getItem('mastex_dealers_config');
-                if (savedDealers) try { setDealersConfig(JSON.parse(savedDealers)); } catch (e) { }
-                const savedAccessories = localStorage.getItem('mastex_accessories_config');
-                if (savedAccessories) try { setAccessoriesConfig(JSON.parse(savedAccessories)); } catch (e) { }
-                const savedTheme = localStorage.getItem('mastex_theme_config');
-                if (savedTheme) try { setThemeImages(JSON.parse(savedTheme)); } catch (e) { }
-
-                let fbConfigStr = localStorage.getItem('mastex_firebase_config');
-                // AUTO-CONNECT: If no local config, use PRESET
-                if (!fbConfigStr && PRESET_FIREBASE_CONFIG && PRESET_FIREBASE_CONFIG.apiKey) {
-                    console.log("No local config found. Using PRESET configuration.");
-                    fbConfigStr = JSON.stringify(PRESET_FIREBASE_CONFIG);
-                }
-
-                if (fbConfigStr) {
-                    try {
-                        const fbConfig = JSON.parse(fbConfigStr);
-                        if (fbConfig.apiKey && fbConfig.projectId) {
-                            if (!firebase.apps.length) firebase.initializeApp(fbConfig);
-                            const firestore = firebase.firestore();
-                            setDb(firestore);
-                            setIsCloudMode(true);
-                            console.log("Firebase Initialized (Cloud Mode)");
-                            return;
-                        }
-                    } catch (e) { console.error("Firebase Init Failed:", e); setIsCloudMode(false); }
-                }
-                setIsCloudMode(false);
-                const savedRMAs = localStorage.getItem('mastex_rma_db_v4');
-                if (savedRMAs) try { const parsed = JSON.parse(savedRMAs); if (Array.isArray(parsed)) setRmas(parsed); } catch (e) { }
-            }, []);
-
-            useEffect(() => {
-                if (isCloudMode && db) {
-                    const unsubscribeRmas = db.collection("rmas").onSnapshot((snapshot) => { const rmaData = []; snapshot.forEach((doc) => { rmaData.push(doc.data()); }); setRmas(rmaData); });
-                    const unsubscribeTheme = db.collection("settings").doc("theme").onSnapshot((docSnap) => { if (docSnap.exists) { const newTheme = docSnap.data(); setThemeImages(newTheme); localStorage.setItem('mastex_theme_config', JSON.stringify(newTheme)); } });
-                    return () => { unsubscribeRmas(); unsubscribeTheme(); };
-                } else { if (!isCloudMode) localStorage.setItem('mastex_rma_db_v4', JSON.stringify(rmas)); }
-            }, [rmas, isCloudMode, db]);
-
-            useEffect(() => {
-                const restoreState = () => {
-                    const params = new URLSearchParams(window.location.search);
-                    const v = params.get('v') || 'dashboard';
-                    const z = params.get('z') || 'ALL';
-                    const q = params.get('q') || 'ALL';
-                    const f = params.get('f') || 'All';
-                    setView(v); setActiveZone(z); setQuickFilter(q); setFilterType(f);
-                    setIsDirty(false); setShipModal(prev => ({ ...prev, open: false })); setConfigModalOpen(false); setDataModalOpen(false); setConfirmState(prev => ({ ...prev, open: false }));
-                };
-                restoreState();
-                window.addEventListener('popstate', restoreState);
-                return () => window.removeEventListener('popstate', restoreState);
-            }, []);
-
-            const navigateTo = (newView, newZone, newQuick, newFilterType) => {
-                setView(newView); setActiveZone(newZone); setQuickFilter(newQuick); setFilterType(newFilterType);
-                const params = new URLSearchParams();
-                if (newView !== 'dashboard') params.set('v', newView);
-                if (newZone !== 'ALL') params.set('z', newZone);
-                if (newQuick !== 'ALL') params.set('q', newQuick);
-                if (newFilterType !== 'All') params.set('f', newFilterType);
-                const newUrl = `${window.location.pathname}${params.toString() ? '?' + params.toString() : ''}`;
-                window.history.pushState({}, '', newUrl);
-            };
-
-            const handleSaveConfig = async (newBrands, newDealers, newAccessories, newTheme) => {
-                setBrandsConfig(newBrands); setDealersConfig(newDealers); setAccessoriesConfig(newAccessories); if (newTheme) setThemeImages(newTheme);
-                localStorage.setItem('mastex_brands_config', JSON.stringify(newBrands)); localStorage.setItem('mastex_dealers_config', JSON.stringify(newDealers)); localStorage.setItem('mastex_accessories_config', JSON.stringify(newAccessories)); if (newTheme) localStorage.setItem('mastex_theme_config', JSON.stringify(newTheme));
-                if (isCloudMode && db && newTheme) try { await db.collection("settings").doc("theme").set(newTheme); } catch (e) { console.error("Failed to sync theme to cloud", e); }
-                setConfigModalOpen(false);
-            };
-
-            const handleSaveFirebase = (config) => { if (config) localStorage.setItem('mastex_firebase_config', JSON.stringify(config)); else localStorage.removeItem('mastex_firebase_config'); window.location.reload(); };
-            const withConfirmation = (action, message) => { if (view === 'form' && isDirty) setConfirmState({ open: true, action, message: message || "您有尚未儲存的變更，離開將導致資料遺失。\n確定要離開嗎？" }); else action(); };
-            
-            const handleBack = (force = false) => {
-                const performBack = () => {
-                    setIsDirty(false);
-                    if (force) { window.history.back(); return; }
-                    if (view === 'form' || view === 'print') { if (activeZone !== 'ALL') navigateTo('list', activeZone, quickFilter, filterType); else navigateTo('dashboard', 'ALL', 'ALL', 'All'); }
-                    else if (view === 'list') navigateTo('dashboard', 'ALL', 'ALL', 'All');
-                };
-                if (force) performBack(); else withConfirmation(performBack);
-            };
-
-            const handleCreate = () => { withConfirmation(() => { const now = new Date(); now.setMinutes(now.getMinutes() - now.getTimezoneOffset()); const id = Date.now().toString() + Math.random().toString(36).substr(2, 5); const rmaNo = `TW-${now.toISOString().slice(0, 10).replace(/-/g, '')}-${Math.floor(Math.random() * 100).toString().padStart(2, '0')}`; setCurrentRMA({ ...INITIAL_STATE, id, rmaNumber: rmaNo, creationDate: now.toISOString().slice(0, 16) }); setIsDirty(false); navigateTo('form', 'CS', quickFilter, filterType); }, "您有未儲存的變更，確定要放棄目前編輯並建立新工單嗎？"); };
-            
-            const saveToDb = async (rma) => { if (isCloudMode && db) try { await db.collection("rmas").doc(rma.id).set(rma); } catch (e) { alert("Cloud Save Failed: " + e); } else setRmas(prev => { const idx = prev.findIndex(r => r.id === rma.id); return idx >= 0 ? prev.map((r, i) => i === idx ? rma : r) : [rma, ...prev]; }); };
-            const deleteFromDb = async (id) => { if (isCloudMode && db) await db.collection("rmas").doc(id).delete(); else setRmas(prev => prev.filter(r => r.id !== id)); };
-            
-            const handleSave = () => {
-                let errorMessage = '';
-                if (currentRMA.customerType === 'C' && !currentRMA.customerName.trim()) errorMessage = '請填寫 消費者姓名 (Name)';
-                else if (currentRMA.customerType === 'B' && !currentRMA.dealerName.trim()) errorMessage = '請填寫 經銷商名稱 (Dealer Name)';
-
-                if (errorMessage) {
-                    setConfirmState({ open: true, isAlert: true, title: "資料不完整 MISSING DATA", message: errorMessage, confirmText: "了解 OK", action: () => {} });
-                    return;
-                }
-
-                saveToDb(currentRMA);
-                setIsDirty(false);
-                if (activeZone !== 'ALL') navigateTo('list', activeZone, quickFilter, filterType);
-                else navigateTo('dashboard', 'ALL', 'ALL', 'All');
-            };
-
-            const cancelDelete = () => setDeletingId(null);
-
-            const handleUpdate = (f, v) => { setCurrentRMA(p => ({ ...p, [f]: v })); setIsDirty(true); };
-            
-            const openShip = (rma, isBrand) => { setShipModal({ open: true, rma, isBrand, courier: isBrand ? '順豐速運 (SF)' : '新竹物流 (HCT)', tracking: '' }); };
-            const confirmShip = (courier, tracking) => {
-                if (!shipModal.rma) return;
-                const today = new Date().toISOString().split('T')[0];
-                let newStatus = shipModal.rma.status;
-                let newDefectiveLoc = shipModal.rma.defectiveLoc;
-                const isSwapFlow = shipModal.rma.csAction === 'direct_swap' || ['swap_new'].includes(shipModal.rma.resolution);
-                if (shipModal.isBrand) { newDefectiveLoc = 'shipped_brand'; if (!isSwapFlow) newStatus = '已寄原廠'; } 
-                else { if (isSwapFlow || newStatus === '新品待寄出') newStatus = '新品已寄出'; else newStatus = '已寄回'; }
-                const updated = { ...shipModal.rma, status: newStatus, defectiveLoc: newDefectiveLoc, returnDate: today, courier: courier, trackingNumber: tracking };
-                saveToDb(updated); setShipModal({ ...shipModal, open: false });
-            };
-
-            const handleConfirmReceive = (rma) => {
-                const now = new Date(); now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
-                const receivedTime = now.toISOString().slice(0, 16);
-                let updatedRMA = { ...rma, isReceived: true, receivedDate: receivedTime };
-                const isSwapFlow = rma.csAction === 'direct_swap' || rma.resolution === 'swap_new';
-                const isShippedState = ['新品已寄出', '已寄回', '已寄原廠', '修復入庫', '新品待寄出'].includes(rma.status);
-                if (!isSwapFlow && !isShippedState) { updatedRMA.status = '檢測中'; if (!updatedRMA.csAction) updatedRMA.csAction = 'standard_rma'; }
-                saveToDb(updatedRMA); setCurrentRMA(updatedRMA); navigateTo('form', 'CS', quickFilter, filterType);
-            };
-
-            const handleEditRMA = (rma) => { withConfirmation(() => { setCurrentRMA(rma); setIsDirty(false); navigateTo('form', activeZone, quickFilter, filterType); }, "您有未儲存的變更，確定要放棄目前編輯並開啟此工單嗎？"); };
-            const handleCardClick = (filterId, type = 'All', zone = 'ALL') => { withConfirmation(() => { setIsDirty(false); navigateTo('list', zone, filterId, type); }); };
-            
-            const handleExportData = () => { const dataStr = JSON.stringify(rmas, null, 2); const blob = new Blob([dataStr], { type: "application/json" }); const url = URL.createObjectURL(blob); const link = document.createElement('a'); link.download = `mastex_rma_backup_${new Date().toISOString().split('T')[0]}.json`; link.href = url; document.body.appendChild(link); link.click(); document.body.removeChild(link); };
-            const handleImportData = (e) => {
-                const file = e.target.files[0]; if (!file) return; const reader = new FileReader(); reader.onload = (event) => { try { const importedData = JSON.parse(event.target.result); if (Array.isArray(importedData)) { setConfirmState({ open: true, title: "確認匯入 IMPORT DATA", message: `確定要匯入 ${importedData.length} 筆資料嗎？\n${isCloudMode ? '這將會寫入雲端資料庫 (Cloud DB)。' : '現有本機資料將被覆蓋。'}`, confirmText: "匯入 IMPORT", action: async () => { if (isCloudMode && db) { alert("開始上傳至雲端... 請稍候"); let count = 0; for (const r of importedData) { await db.collection("rmas").doc(r.id).set(r); count++; } alert(`成功上傳 ${count} 筆資料至雲端`); } else { setRmas(importedData); } setDataModalOpen(false); } }); } } catch (err) { alert('檔案錯誤'); } }; reader.readAsText(file);
-            };
-
-            const filteredRmas = rmas.filter(r => {
-                const s = searchTerm.toLowerCase();
-                const matchText = (r.rmaNumber || '').toLowerCase().includes(s) || (r.customerName || '').toLowerCase().includes(s) || (r.dealerName || '').toLowerCase().includes(s) || (r.serialNumber || '').toLowerCase().includes(s) || (r.refNumber || '').toLowerCase().includes(s) || (r.trackingNumber || '').toLowerCase().includes(s) || (r.endUserName || '').toLowerCase().includes(s);
-                let matchQuick = true;
-                if (quickFilter === 'URGENT_REPAIR') { matchQuick = r.customerType === 'C' && r.csAction === 'standard_rma' && ['待收件', '檢測中', '待料中', 'Pending', 'Checking', 'Waiting Parts'].includes(r.status); }
-                else if (quickFilter === 'PENDING_REPAIR') { const isDealerRepair = r.customerType === 'B' && r.csAction === 'standard_rma' && ['待收件', '檢測中', '待料中', 'Pending', 'Checking', 'Waiting Parts'].includes(r.status); const isSwapOldUnit = (r.csAction === 'direct_swap' || ['swap_new'].includes(r.resolution)) && r.isReceived && !r.defectiveLoc; matchQuick = isDealerRepair || isSwapOldUnit; }
-                else if (quickFilter === 'NEW_PENDING') { matchQuick = ['新品待寄出', '完修待寄回', 'Pending Ship', 'Repaired'].includes(r.status); }
-                else if (quickFilter === 'TECH_HISTORY') { matchQuick = ['已寄回', '已寄原廠', '修復入庫', '新品已寄出', 'Returned', 'Shipped to Brand', 'Restocked', 'Shipped', 'To Brand'].includes(r.status); }
-                else if (quickFilter === 'SALES_WRAP') { matchQuick = ['待料中', 'Waiting Parts'].includes(r.status) || r.defectiveLoc === 'waiting_parts'; }
-                else if (quickFilter === 'SALES_BRAND_RMA') { matchQuick = ['待寄原廠', 'To Brand'].includes(r.status) || r.defectiveLoc === 'brand_rma'; }
-                else if (quickFilter === 'SALES_ALL') { const inventoryStatuses = ['待料中', '待寄原廠', '修復入庫', '已寄原廠', 'Waiting Parts', 'To Brand', 'Restocked', 'Shipped to Brand']; const inventoryLocs = ['warehouse', 'waiting_parts', 'brand_rma', 'shipped_brand', 'display']; matchQuick = inventoryStatuses.includes(r.status) || inventoryLocs.includes(r.defectiveLoc); }
-                else if (quickFilter === 'CS_ALL') { matchQuick = true; } else if (quickFilter === 'CS_B2B') { matchQuick = r.customerType === 'B'; } else if (quickFilter === 'CS_B2C') { matchQuick = r.customerType === 'C'; }
-                const matchType = (filterType === 'All' || quickFilter.includes('CS_')) || r.customerType === filterType;
-                return matchText && matchQuick && matchType;
-            }).sort((a, b) => (a.refNumber || '').localeCompare(b.refNumber || ''));
-
-            const stats = {
-                urgentRepair: rmas.filter(r => r.customerType === 'C' && r.csAction === 'standard_rma' && ['待收件', '檢測中', '待料中', 'Pending', 'Checking', 'Waiting Parts'].includes(r.status)).length,
-                pendingRepair: rmas.filter(r => (r.customerType === 'B' && r.csAction === 'standard_rma' && ['待收件', '檢測中', '待料中', 'Pending', 'Checking', 'Waiting Parts'].includes(r.status)) || ((r.csAction === 'direct_swap' || ['swap_new'].includes(r.resolution)) && r.isReceived && !r.defectiveLoc)).length,
-                newPending: rmas.filter(r => ['新品待寄出', '完修待寄回', 'Pending Ship', 'Repaired'].includes(r.status)).length,
-                shipped: rmas.filter(r => ['已寄回', '已寄原廠', '修復入庫', '新品已寄出', 'Returned', 'Shipped to Brand', 'Restocked', 'Shipped'].includes(r.status)).length
-            };
-            const inventoryCount = rmas.filter(r => ['待料中', '待寄原廠', '修復入庫', '已寄原廠', 'Waiting Parts', 'To Brand', 'Restocked', 'Shipped to Brand'].includes(r.status) || ['warehouse', 'waiting_parts', 'brand_rma', 'shipped_brand', 'display'].includes(r.defectiveLoc)).length;
-
-            const dataProps = { dealers: dealersConfig, brands: brandsConfig, sources: INITIAL_SOURCES, couriers: INITIAL_COURIERS, accessories: accessoriesConfig, conditions: CONDITIONS };
-
+        const ShippingModal = ({ isOpen, onClose, onConfirm, title, defaultCourier, couriers, rma }) => {
+            const [courier, setCourier] = useState(defaultCourier || '新竹物流 (HCT)');
+            const [tracking, setTracking] = useState('');
+            useEffect(() => { if (isOpen) { setTracking(''); setCourier(defaultCourier || '新竹物流 (HCT)'); } }, [isOpen, defaultCourier]);
+            if (!isOpen) return null;
+            const displayInfo = rma ? { name: rma.recipientName || rma.customerName || '-', phone: rma.recipientPhone || rma.customerContact || '-', address: rma.recipientAddress || (rma.returnTarget === 'store' ? '寄回門市 Store' : '-'), product: (rma.recipientBrand && rma.recipientModel) ? `${rma.recipientBrand} ${rma.recipientModel}` : `${rma.brand} ${rma.model}` } : null;
             return (
-                <div className="flex flex-col min-h-screen w-full relative bg-[#050505] overflow-x-hidden">
-                    <ConfirmModal isOpen={confirmState.open} onClose={() => setConfirmState({ ...confirmState, open: false })} onConfirm={confirmState.action} message={confirmState.message} />
-                    
-                    {view !== 'print' && (
-                        <header className="h-20 border-b border-zinc-800 bg-black/90 backdrop-blur flex items-center px-6 md:px-8 justify-between sticky top-0 z-50 print-hidden shrink-0">
-                            <div className="flex items-center gap-6">
-                                <div className="flex items-center cursor-pointer gap-5" onClick={() => handleBack()}>
-                                    <Logo />
-                                    <div className="flex flex-col justify-center">
-                                        <h1 className="text-2xl font-black tracking-widest text-white leading-none">MASTEX <span className="text-lg text-gray-500 font-normal">三鍵客</span></h1>
-                                        <div className="flex items-center gap-2 mt-1">
-                                            <p className="text-xs text-gray-400 font-mono-tech tracking-[0.2em]">RMA SYSTEM <span className="text-teal-500 font-bold">v122.19 (Final Fixed)</span></p>
-                                            <div className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold border ${isCloudMode ? 'bg-green-900/30 border-green-500 text-green-400' : 'bg-zinc-800 border-zinc-600 text-gray-400'}`}>
-                                                <Icon name={isCloudMode ? "Wifi" : "WifiOff"} size={12} />
-                                                {isCloudMode ? 'CLOUD ONLINE' : 'LOCAL MODE'}
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div className="hidden md:flex h-10 w-px bg-zinc-800 mx-2"></div>
-                                <button onClick={handleCreate} className="hidden md:flex bg-blue-600 hover:bg-blue-500 text-white px-5 py-2.5 rounded-lg font-bold text-sm items-center gap-2 shadow-lg shadow-blue-900/20 transition-all border border-blue-500 hover:scale-105"><Icon name="Plus" size={18}/> 建立工單 NEW TICKET</button>
-                            </div>
-                            <div className="flex items-center gap-6">
-                                <button onClick={() => setConfigModalOpen(true)} className="flex items-center gap-2 px-3 py-2 bg-zinc-800/50 hover:bg-zinc-800 border border-zinc-700 rounded-lg text-gray-300 font-bold transition-colors"><Icon name="Settings" size={18}/></button>
-                                <button onClick={() => setDataModalOpen(true)} className="flex items-center gap-2 px-4 py-2 bg-zinc-800/50 hover:bg-zinc-800 border border-zinc-700 rounded-lg text-gray-300 font-bold text-xs transition-colors"><Icon name="Database" size={16}/> <span className="hidden md:inline">資料管理 DATA</span></button>
-                            </div>
-                        </header>
-                    )}
-
-                    <main className="flex-1 w-full print:bg-white flex flex-col">
-                        {view === 'dashboard' && (
-                            <div key={JSON.stringify(themeImages)} className="flex-1 w-full px-4 md:px-6 py-6 animate-fade-in overflow-y-auto">
-                                <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 min-h-[calc(100vh-14rem)]">
-                                    <div className="xl:col-span-3 flex flex-col">
-                                        <div onClick={() => handleCardClick('CS_ALL', 'All', 'CS')} className="group relative h-full min-h-[400px] w-full overflow-hidden rounded-3xl bg-zinc-900 border border-zinc-800 transition-all duration-500 hover:-translate-y-2 hover:shadow-[0_20px_40px_-15px_rgba(0,0,0,0.7)] hover:ring-2 hover:ring-blue-500 cursor-pointer">
-                                            <div className="absolute inset-0 bg-cover bg-center transition-transform duration-1000 ease-out group-hover:scale-110" style={{ backgroundImage: `url(${themeImages.CS})` }} />
-                                            <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-blue-950/30 to-transparent" />
-                                            <div className="relative z-10 flex h-full flex-col p-8">
-                                                <div className="flex items-center justify-between mb-4"><div className="flex h-12 w-12 items-center justify-center rounded-full bg-blue-500/20 text-blue-400 backdrop-blur-md border border-blue-500/30"><Icon name="User" size={24} /></div><button onClick={(e) => { e.stopPropagation(); handleCreate(); }} className="bg-blue-600 hover:bg-blue-500 text-white p-3 rounded-full shadow-lg border border-blue-400/50 md:hidden"><Icon name="Plus" size={24}/></button></div>
-                                                <div className="mt-auto"><h3 className="text-sm font-bold tracking-[0.2em] text-blue-300 uppercase mb-2">客服中心</h3><div className="flex items-baseline gap-3"><span className="font-mono-tech text-7xl font-bold text-white tracking-tighter drop-shadow-2xl">{rmas.length}</span><span className="text-base font-bold text-gray-400">件</span></div><p className="text-xs text-blue-200/70 mt-2 font-mono-tech">目前案件總數</p></div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div className="xl:col-span-6 grid grid-rows-2 gap-6">
-                                        <div className="grid grid-cols-2 gap-6 h-full min-h-[280px]">
-                                            <div onClick={() => handleCardClick('URGENT_REPAIR', 'All', 'TECH')} className="group relative h-full w-full overflow-hidden rounded-3xl bg-zinc-900 border border-zinc-800 transition-all duration-500 hover:-translate-y-2 hover:shadow-[0_20px_40px_-15px_rgba(220,38,38,0.3)] hover:ring-2 hover:ring-red-500 cursor-pointer">
-                                                <div className="absolute inset-0 bg-cover bg-center transition-transform duration-1000 ease-out group-hover:scale-110" style={{ backgroundImage: `url(${themeImages.URGENT})` }} />
-                                                <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-red-950/30 to-transparent" />
-                                                <div className="relative z-10 flex h-full flex-col justify-between p-6">
-                                                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-red-500/20 text-red-400 backdrop-blur-md border border-red-500/30"><Icon name="AlertTriangle" size={20} /></div>
-                                                    <div><div className="text-5xl font-bold font-mono-tech text-white mb-1">{stats.urgentRepair}</div><div className="text-sm font-bold text-red-300 tracking-wider uppercase">急件待修</div></div>
-                                                </div>
-                                            </div>
-                                            <div onClick={() => handleCardClick('PENDING_REPAIR', 'All', 'TECH')} className="group relative h-full w-full overflow-hidden rounded-3xl bg-zinc-900 border border-zinc-800 transition-all duration-500 hover:-translate-y-2 hover:shadow-[0_20px_40px_-15px_rgba(113,113,122,0.3)] hover:ring-2 hover:ring-gray-400 cursor-pointer">
-                                                <div className="absolute inset-0 bg-cover bg-center transition-transform duration-1000 ease-out group-hover:scale-110" style={{ backgroundImage: `url(${themeImages.PENDING})` }} />
-                                                <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-zinc-950/30 to-transparent" />
-                                                <div className="relative z-10 flex h-full flex-col justify-between p-6">
-                                                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gray-500/20 text-gray-300 backdrop-blur-md border border-gray-500/30"><Icon name="Cpu" size={20} /></div>
-                                                    <div><div className="text-5xl font-bold font-mono-tech text-white mb-1">{stats.pendingRepair}</div><div className="text-sm font-bold text-gray-300 tracking-wider uppercase">一般待修</div></div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div className="grid grid-cols-2 gap-6 h-full min-h-[280px]">
-                                            <div onClick={() => handleCardClick('NEW_PENDING', 'All', 'TECH')} className="group relative h-full w-full overflow-hidden rounded-3xl bg-zinc-900 border border-zinc-800 transition-all duration-500 hover:-translate-y-2 hover:shadow-[0_20px_40px_-15px_rgba(234,179,8,0.3)] hover:ring-2 hover:ring-yellow-500 cursor-pointer">
-                                                <div className="absolute inset-0 bg-cover bg-center transition-transform duration-1000 ease-out group-hover:scale-110" style={{ backgroundImage: `url(${themeImages.SHIPPING})` }} />
-                                                <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-yellow-950/30 to-transparent" />
-                                                <div className="relative z-10 flex h-full flex-col justify-between p-6">
-                                                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-yellow-500/20 text-yellow-400 backdrop-blur-md border border-yellow-500/30"><Icon name="Package" size={20} /></div>
-                                                    <div><div className="text-5xl font-bold font-mono-tech text-white mb-1">{stats.newPending}</div><div className="text-sm font-bold text-yellow-300 tracking-wider uppercase">產品待寄</div></div>
-                                                </div>
-                                            </div>
-                                            <div onClick={() => handleCardClick('TECH_HISTORY', 'All', 'TECH')} className="group relative h-full w-full overflow-hidden rounded-3xl bg-zinc-900 border border-zinc-800 transition-all duration-500 hover:-translate-y-2 hover:shadow-[0_20px_40px_-15px_rgba(22,163,74,0.3)] hover:ring-2 hover:ring-green-500 cursor-pointer">
-                                                <div className="absolute inset-0 bg-cover bg-center transition-transform duration-1000 ease-out group-hover:scale-110" style={{ backgroundImage: `url(${themeImages.HISTORY})` }} />
-                                                <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-green-950/30 to-transparent" />
-                                                <div className="relative z-10 flex h-full flex-col justify-between p-6">
-                                                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-green-500/20 text-green-400 backdrop-blur-md border border-green-500/30"><Icon name="CheckCircle" size={20} /></div>
-                                                    <div><div className="text-5xl font-bold font-mono-tech text-white mb-1">{stats.shipped}</div><div className="text-sm font-bold text-green-300 tracking-wider uppercase">已出貨</div></div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div className="xl:col-span-3 flex flex-col">
-                                        <div onClick={() => handleCardClick('SALES_ALL', 'All', 'SALES')} className="group relative h-full min-h-[400px] w-full overflow-hidden rounded-3xl bg-zinc-900 border border-zinc-800 transition-all duration-500 hover:-translate-y-2 hover:shadow-[0_20px_40px_-15px_rgba(249,115,22,0.3)] hover:ring-2 hover:ring-orange-500 cursor-pointer">
-                                            <div className="absolute inset-0 bg-cover bg-center transition-transform duration-1000 ease-out group-hover:scale-110" style={{ backgroundImage: `url(${themeImages.INVENTORY})` }} />
-                                            <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-orange-950/30 to-transparent" />
-                                            <div className="relative z-10 flex h-full flex-col p-8">
-                                                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-orange-500/20 text-orange-400 backdrop-blur-md border border-orange-500/30 mb-auto"><Icon name="Briefcase" size={24} /></div>
-                                                <div className="mt-auto"><h3 className="text-sm font-bold tracking-[0.2em] text-orange-300 uppercase mb-2">舊品庫存</h3><div className="flex items-baseline gap-3"><span className="font-mono-tech text-7xl font-bold text-white tracking-tighter drop-shadow-2xl">{inventoryCount}</span><span className="text-base font-bold text-gray-400">件</span></div><p className="text-xs text-orange-200/70 mt-2 font-mono-tech">庫存與借用</p></div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        )}
-                        {view === 'list' && (
-                            <div className="w-full px-6 md:px-8 py-8 animate-fade-in flex-1">
-                                <div className="mb-6 flex items-center gap-4"><button onClick={() => handleBack()} className="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 rounded border border-zinc-600 text-gray-300 font-bold flex items-center gap-2 text-sm"><Icon name="ArrowLeft" size={16} /> 返回儀表板 DASHBOARD</button><h2 className="text-xl font-bold text-white flex items-center gap-2">工單清單 <span className="text-xs font-mono-tech text-gray-500 bg-zinc-900 px-2 py-1 rounded border border-zinc-800">{quickFilter}</span></h2></div>
-                                {activeZone === 'SALES' && (<div className="mb-6 flex gap-4"><button onClick={() => setQuickFilter('SALES_ALL')} className={`px-4 py-2 rounded font-bold text-sm ${quickFilter === 'SALES_ALL' ? 'bg-orange-500 text-white' : 'bg-zinc-800 text-gray-400'}`}>全部 ALL</button><button onClick={() => setQuickFilter('SALES_WRAP')} className={`px-4 py-2 rounded font-bold text-sm ${quickFilter === 'SALES_WRAP' ? 'bg-orange-500 text-white' : 'bg-zinc-800 text-gray-400'}`}>待料</button><button onClick={() => setQuickFilter('SALES_BRAND_RMA')} className={`px-4 py-2 rounded font-bold text-sm ${quickFilter === 'SALES_BRAND_RMA' ? 'bg-orange-500 text-white' : 'bg-zinc-800 text-gray-400'}`}>待寄原廠</button></div>)}
-                                {activeZone === 'CS' && (<div className="mb-6 flex gap-4"><button onClick={() => { setQuickFilter('CS_ALL'); setFilterType('All'); }} className={`px-4 py-2 rounded font-bold text-sm ${quickFilter === 'CS_ALL' ? 'bg-blue-600 text-white' : 'bg-zinc-800 text-gray-400'}`}>全部 ALL</button><button onClick={() => { setQuickFilter('CS_B2C'); setFilterType('C'); }} className={`px-4 py-2 rounded font-bold text-sm ${quickFilter === 'CS_B2C' ? 'bg-blue-600 text-white' : 'bg-zinc-800 text-gray-400'}`}>消費者 B2C</button><button onClick={() => { setQuickFilter('CS_B2B'); setFilterType('B'); }} className={`px-4 py-2 rounded font-bold text-sm ${quickFilter === 'CS_B2B' ? 'bg-blue-600 text-white' : 'bg-zinc-800 text-gray-400'}`}>經銷商 B2B</button></div>)}
-                                {activeZone === 'TECH' && quickFilter === 'PENDING_REPAIR' && (<div className="mb-6 flex gap-4"><button onClick={() => setFilterType('All')} className={`px-4 py-2 rounded font-bold text-sm ${filterType === 'All' ? 'bg-zinc-600 text-white' : 'bg-zinc-800 text-gray-400'}`}>全部 ALL</button><button onClick={() => setFilterType('C')} className={`px-4 py-2 rounded font-bold text-sm ${filterType === 'C' ? 'bg-zinc-600 text-white' : 'bg-zinc-800 text-gray-400'}`}>消費者 B2C (Swap)</button><button onClick={() => setFilterType('B')} className={`px-4 py-2 rounded font-bold text-sm ${filterType === 'B' ? 'bg-zinc-600 text-white' : 'bg-zinc-800 text-gray-400'}`}>經銷商 B2B</button></div>)}
-                                <div className="search-zone-bg p-6 rounded-xl flex flex-col md:flex-row justify-between gap-6 shadow-2xl mb-8 border border-zinc-800"><div className="flex flex-1 gap-4 items-center"><h3 className="text-sm font-bold text-gray-400">工單檢索</h3><input type="text" placeholder="搜尋..." className="flex-1 bg-black border border-zinc-600 py-2 px-4 rounded text-white" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} /></div></div>
-                                <div className="tech-card rounded-xl overflow-hidden border border-zinc-800">
-                                    <table className="w-full text-left text-base text-gray-300">
-                                        <thead className="bg-zinc-900/80 text-gray-500 font-bold border-b border-zinc-800 text-xs uppercase"><tr><th className="p-5">{activeZone === 'SALES' ? '庫存狀態 STATUS' : '狀態 STATUS'}</th><th className="p-5 w-20">類型 TYPE</th><th className="p-5">單號 ID</th><th className="p-5">客戶 CLIENT</th><th className="p-5">產品 DEVICE</th><th className="p-5 text-right">操作 ACTION</th></tr></thead>
-                                        <tbody className="divide-y divide-zinc-800/50">
-                                            {filteredRmas.map(r => (<SwipeableRow key={r.id} onClick={() => handleEditRMA(r)} onDelete={() => requestDelete(r.id)} isDeleting={deletingId === r.id} onConfirm={() => confirmDelete(r.id)} onCancel={cancelDelete} className="rma-row hover:bg-zinc-900">
-                                                <td className="p-5">{activeZone === 'SALES' ? (<div className="flex flex-col items-start gap-1.5">{(r.defectiveLoc || DEFECTIVE_LOC_LABELS[r.status]) ? (<span className={`text-xs px-2 py-1 border rounded font-bold ${DEFECTIVE_LOC_STYLES[r.defectiveLoc] || STATUS_STYLES[r.status] || 'text-gray-400 border-gray-600'}`}>{DEFECTIVE_LOC_LABELS[r.defectiveLoc] || r.status}</span>) : (<span className={`text-xs px-2 py-1 border rounded font-bold ${STATUS_STYLES[r.status]}`}>{r.status}</span>)}{r.isBorrowed && (<div className="flex flex-col"><span className="text-[10px] font-bold text-red-400 border border-red-900 bg-red-900/20 px-1.5 py-0.5 rounded w-fit mb-0.5">外借中 BORROWED</span>{(() => { const lastLog = r.displayLog ? [...r.displayLog].reverse().find(l => l.action.includes('借出')) : null; if (lastLog) return (<span className="text-[10px] text-gray-400 font-mono-tech"><span className="text-white font-bold">{lastLog.name}</span> <span className="text-gray-600">|</span> {lastLog.date}</span>); return null; })()}</div>)}</div>) : (<div className="flex flex-col gap-1 items-start"><span className={`text-xs px-2 py-1 border rounded font-bold ${STATUS_STYLES[r.status]}`}>{r.status}</span>{r.returnTarget && (['新品待寄出', '新品已寄出', '已寄回', '完修待寄回', '修復入庫', 'Pending Ship', 'Shipped', 'Returned', 'Repaired', 'Restocked'].includes(r.status)) && (<span className={`text-[10px] px-1.5 py-0.5 border rounded font-bold ${r.returnTarget === 'store' ? 'text-purple-400 border-purple-500' : 'text-blue-400 border-blue-500'}`}>{r.returnTarget === 'store' ? 'TO STORE' : 'TO CUST'}</span>)}</div>)}</td>
-                                                <td className="p-5"><span className={`text-[10px] font-bold px-1.5 py-0.5 rounded border ${r.customerType === 'B' ? 'border-blue-500 text-blue-400' : 'border-purple-500 text-purple-400'}`}>{r.customerType === 'B' ? 'B2B' : 'B2C'}</span></td><td className="p-5 text-white">{r.refNumber && <div className="font-mono-tech text-yellow-500 text-lg font-bold mb-1">{r.refNumber}</div>}<div className="font-mono-tech text-gray-400 text-sm">{r.rmaNumber}</div></td><td className="p-5 text-white"><div className="font-bold">{r.customerType === 'B' ? r.dealerName : r.customerName}</div>{r.customerType === 'B' && <div className="mt-1"><span className="text-xs text-gray-500">終端客戶:</span> <span className="text-sm font-bold text-gray-300">{r.endUserName}</span></div>}</td><td className="p-5">{r.brand} {r.model}</td><td className="p-5 text-right flex justify-end gap-2" onClick={e => e.stopPropagation()}>{!r.isReceived && (activeZone === 'ALL' || activeZone === 'CS') && (<button onClick={(e) => { e.stopPropagation(); handleConfirmReceive(r); }} className="px-3 py-1.5 border border-zinc-700 bg-zinc-800 rounded text-xs text-white hover:bg-zinc-700 font-bold">舊品簽收</button>)}{activeZone !== 'CS' && activeZone !== 'SALES' && (r.status === '完修待寄回' || r.status === '新品待寄出' || r.status === 'Repaired' || r.status === 'Pending Ship') && <button onClick={() => openShip(r, false)} className="px-3 py-1.5 rounded text-xs font-bold bg-blue-900 text-blue-100">出貨</button>}{activeZone !== 'CS' && activeZone !== 'SALES' && (r.status === '待寄原廠' || r.status === 'To Brand') && <button onClick={() => openShip(r, true)} className="px-3 py-1.5 bg-red-900 text-red-100 rounded text-xs">寄出</button>}<button onClick={() => { setCurrentRMA(r); navigateTo('print', activeZone, quickFilter, filterType); }} className="p-1.5 text-gray-400 hover:text-white"><Icon name="Printer" size={16} /></button><button onClick={(e) => { e.stopPropagation(); if (deletingId === r.id) cancelDelete(); else requestDelete(r.id); }} className="p-1.5 text-red-900 hover:text-red-500"><Icon name="Trash2" size={16} /></button></td>
-                                            </SwipeableRow>))}
-                                        </tbody>
-                                    </table>
-                                </div>
-                            </div>
-                        )}
-                        {view === 'form' && <FormView rma={currentRMA} onChange={handleUpdate} onSave={handleSave} onBack={handleBack} data={dataProps} activeZone={activeZone} openShip={openShip} onPrint={() => { setIsDirty(false); navigateTo('print', activeZone, quickFilter, filterType); }} />}
-                        {view === 'print' && <PrintView rma={currentRMA} onBack={() => setView('list')} />}
-                    </main>
-                    {shipModal.open && <ShippingModal isOpen={shipModal.open} onClose={() => setShipModal({ ...shipModal, open: false })} onConfirm={confirmShip} title="出貨" defaultCourier={shipModal.courier} couriers={INITIAL_COURIERS} courierMgr={null} rma={shipModal.rma} />}
-                    <ConfigModal isOpen={configModalOpen} onClose={() => setConfigModalOpen(false)} currentBrands={brandsConfig} currentDealers={dealersConfig} currentAccessories={accessoriesConfig} currentTheme={themeImages} onSave={handleSaveConfig} onSaveFirebase={handleSaveFirebase} />
-                    {dataModalOpen && (
-                        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-fade-in">
-                            <div className="bg-zinc-900 border border-zinc-700 rounded-xl w-full max-w-lg p-8 shadow-2xl relative animate-fade-in">
-                                <button onClick={() => setDataModalOpen(false)} className="absolute top-4 right-4 text-gray-500 hover:text-white"><Icon name="X" size={24}/></button>
-                                <h3 className="text-xl font-bold text-white mb-6">資料管理 DATA MANAGEMENT</h3>
-                                <div className="space-y-4">
-                                    <button onClick={handleExportData} className="w-full py-4 bg-zinc-800 rounded text-white font-bold">匯出資料 EXPORT</button>
-                                    <div className="relative"><button onClick={() => fileInputRef.current?.click()} className="w-full py-4 bg-zinc-800 rounded text-white font-bold">匯入資料 IMPORT</button><input type="file" ref={fileInputRef} onChange={handleImportData} className="hidden" accept=".json" /></div>
-                                </div>
-                            </div>
-                        </div>
-                    )}
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+                    <div className="bg-black border border-white/30 rounded-lg w-full max-w-md p-8 shadow-[0_0_40px_rgba(255,255,255,0.15)]">
+                        <h3 className="text-xl font-bold text-white mb-6 flex items-center gap-3"><Icon name="Truck" size={24} /> {title}</h3>
+                        {displayInfo && (<div className="mb-6 bg-zinc-900 p-4 rounded border border-zinc-700"><div className="mb-3 pb-3 border-b border-zinc-700"><p className="text-xs text-gray-500 font-bold mb-1">產品型號 DEVICE</p><p className="text-white font-mono-tech font-bold text-lg">{displayInfo.product}</p></div><div><p className="text-xs text-gray-500 font-bold mb-1">收件資訊 RECIPIENT</p><p className="text-white font-bold text-lg">{displayInfo.name} <span className="text-sm font-normal text-gray-400">{displayInfo.phone}</span></p><p className="text-gray-300 text-sm mt-1 break-words">{displayInfo.address}</p></div></div>)}
+                        <div className="space-y-6"><div><DualLabel zh="物流商" en="COURIER" /><select className="w-full p-3 rounded bg-black border-zinc-700 text-white text-lg" value={courier} onChange={e => setCourier(e.target.value)}>{couriers.map(c => <option key={c} value={c}>{c}</option>)}</select></div><div><DualLabel zh="追蹤單號" en="TRACKING NO." /><input autoFocus type="text" className="w-full p-3 rounded bg-black border-zinc-700 text-white font-mono-tech text-xl" placeholder="請輸入單號..." value={tracking} onChange={e => setTracking(e.target.value)} /></div></div>
+                        <div className="flex justify-end gap-4 mt-8"><button onClick={onClose} className="px-6 py-3 text-sm font-bold text-gray-400 hover:text-white border border-zinc-700 rounded">取消 CANCEL</button><button onClick={() => onConfirm(courier, tracking)} disabled={!tracking} className="px-6 py-3 bg-white text-black text-sm font-bold rounded hover:bg-gray-200">確認 CONFIRM</button></div>
+                    </div>
                 </div>
             );
         };
 
+        const FormView = ({ rma, onChange, onSave, onBack, data, activeZone, openShip, onPrint }) => {
+            const [borrowName, setBorrowName] = useState('');
+            const [borrowDate, setBorrowDate] = useState('');
+            const [returnDate, setReturnDate] = useState('');
+            const [editingIndex, setEditingIndex] = useState(-1);
+            const [editValues, setEditValues] = useState({});
+            
+            const currentBrandData = data.brands[rma.brand] || { models: [], commonIssues: [] };
+            const recipientBrandData = rma.recipientBrand ? (data.brands[rma.recipientBrand] || { models: [], commonIssues: [] }) : { models: [], commonIssues: [] };
+            const safeDisplayLog = rma.displayLog || [];
+            const safeDiagnosis = rma.diagnosis || {};
+
+            const handleBorrow = () => { if (!borrowName || !borrowDate) return alert('請填寫借用人與日期'); const newLog = [...safeDisplayLog, { action: '借出 Borrow', name: borrowName, date: borrowDate }]; onChange('displayLog', newLog); onChange('isBorrowed', true); setBorrowName(''); setBorrowDate(''); };
+            const handleReturn = () => { if (!returnDate) return alert('請填寫歸還日期'); const newLog = [...safeDisplayLog, { action: '歸還 Return', name: '庫存', date: returnDate }]; onChange('displayLog', newLog); onChange('isBorrowed', false); setReturnDate(''); };
+            const handleEditLog = (idx) => { setEditingIndex(idx); setEditValues(safeDisplayLog[idx]); };
+            const handleSaveLog = (idx) => { const newLog = [...safeDisplayLog]; const now = new Date(); const timeStr = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`; let actionStr = newLog[idx].action; if (!actionStr.includes('(編輯於')) { actionStr += ` (編輯於 ${timeStr})`; } else { actionStr = actionStr.replace(/\(編輯於.*?\)/, `(編輯於 ${timeStr})`); } newLog[idx] = { ...newLog[idx], ...editValues, action: actionStr }; onChange('displayLog', newLog); setEditingIndex(-1); setEditValues({}); };
+            
+            const canBorrow = ['待料中', '待寄原廠', '待入庫', '修復入庫', 'Waiting Parts', 'To Brand', 'Restocked'].includes(rma.status) || rma.defectiveLoc === 'brand_rma' || rma.defectiveLoc === 'warehouse';
+            const canPrint = ['已寄回', '已寄原廠', '新品已寄出', '修復入庫', 'Returned', 'Shipped to Brand', 'Shipped', 'Restocked'].includes(rma.status);
+            
+            const getDeadlineInfo = () => { if (!rma.resolution && rma.csAction === 'standard_rma' && rma.isReceived && rma.receivedDate) { try { const received = new Date(rma.receivedDate); if (isNaN(received.getTime())) return null; const deadline = new Date(received.getTime() + 14 * 24 * 60 * 60 * 1000); const now = new Date(); const daysLeft = Math.ceil((deadline.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)); return { date: deadline.toISOString().split('T')[0], daysLeft }; } catch (e) { return null; } } return null; };
+            const deadlineInfo = getDeadlineInfo();
+
+            useEffect(() => {
+                if (rma.isReceived && (rma.status === '檢測中' || rma.status === 'Checking')) {
+                    setTimeout(() => {
+                        const el = document.getElementById('receive-check-section');
+                        if (el) { 
+                            el.scrollIntoView({ behavior: 'smooth', block: 'center' }); 
+                            el.classList.add('highlight-section'); 
+                            setTimeout(() => el.classList.remove('highlight-section'), 2500); 
+                        }
+                    }, 600);
+                }
+            }, []);
+
+            if (activeZone === 'SALES') {
+                return (
+                    <div className="w-full px-6 md:px-12 pb-32 animate-fade-in">
+                        <div className="flex items-center justify-between mb-8 sticky top-0 bg-black/90 backdrop-blur border-b border-zinc-800 py-5 z-20 px-6 rounded-b-xl shadow-lg">
+                            <div className="flex items-center gap-6"><button onClick={() => onBack()} className="text-gray-500 hover:text-white flex items-center gap-2 text-base font-bold transition-colors"><Icon name="ArrowLeft" size={20} /> 返回 BACK</button><div className="h-8 w-px bg-zinc-700"></div><h2 className="text-3xl font-mono-tech font-bold text-white tracking-tight">{rma.rmaNumber}</h2><span className={`px-4 py-1 text-sm rounded border font-bold tracking-wide uppercase ${(rma.status.includes('寄出') || rma.status.includes('Shipped')) ? 'text-green-400 border-green-500' : 'text-gray-400 border-gray-600'}`}>{rma.status}</span></div>
+                            <div className="flex gap-4"><button onClick={onSave} className="px-10 py-3 bg-white text-black rounded font-bold text-lg flex items-center gap-2 hover:bg-gray-200"><Icon name="Save" size={24} /> 儲存 SAVE</button></div>
+                        </div>
+                        <div className="max-w-4xl mx-auto space-y-8">
+                            <div className="tech-card p-8 rounded-xl border-l-4 border-l-orange-500 sales-zone-bg"><SectionHeader zh="產品摘要" en="PRODUCT SUMMARY" icon="Box" color="text-orange-400" /><div className="grid grid-cols-2 gap-6 mb-4"><div><label className="text-xs text-gray-500 block mb-1">品牌 Brand</label><div className="text-white text-lg font-bold">{rma.brand}</div></div><div><label className="text-xs text-gray-500 block mb-1">型號 Model</label><div className="text-white text-lg font-bold">{rma.model}</div></div></div><div className="mb-4"><label className="text-xs text-gray-500 block mb-1">序號 Serial No.</label><div className="text-yellow-500 font-mono-tech text-lg">{rma.serialNumber}</div></div><div className="bg-zinc-900/50 p-4 rounded border border-zinc-800 mt-4"><label className="text-xs text-gray-500 block mb-1 font-bold">故障診斷 FAULT DIAGNOSIS</label><div className="text-gray-300 text-sm leading-relaxed whitespace-pre-wrap">{rma.reportedIssue || '尚無診斷說明 No Diagnosis'}</div></div></div>
+                            <div className="p-6 border border-orange-900/50 bg-orange-900/10 rounded sales-zone-bg"><p className="text-base text-orange-400 font-bold mb-4 flex items-center gap-2"><Icon name="Users" size={20} /> 舊品庫存/借用管理 INVENTORY & LENDING</p><div className="flex gap-4 mb-4 items-end"><div className="flex-1"><label className="block text-xs text-gray-500 mb-1">狀態 Status</label><div className={`text-sm font-bold px-3 py-2 rounded border text-center ${rma.isBorrowed ? 'bg-red-900/50 text-red-200 border-red-500' : 'bg-green-900/50 text-green-200 border-green-500'}`}>{rma.isBorrowed ? '外借中 Borrowed' : '在庫 In Stock'}</div></div>{rma.isBorrowed ? (<div className="flex-1"><button onClick={handleReturn} className="w-full py-2 bg-white text-black text-sm font-bold rounded hover:bg-gray-200">歸還 RETURN</button></div>) : (<div className="flex-1 relative"><button onClick={handleBorrow} disabled={!canBorrow} className={`w-full py-2 text-sm font-bold rounded transition-all ${canBorrow ? 'bg-orange-500 text-white hover:bg-orange-600' : 'bg-zinc-800 text-zinc-500 cursor-not-allowed border border-zinc-700'}`}>{canBorrow ? '借出 BORROW' : '不可借出 N/A'}</button></div>)}</div>{!canBorrow && !rma.isBorrowed && (<div className="mb-4 p-2 bg-red-900/20 border border-red-900/50 rounded text-center"><p className="text-xs text-red-400">※ 系統限制：僅狀態為 [待料中/待寄原廠/修復入庫] 或 舊品待處理 之工單可外借。</p></div>)}{!rma.isBorrowed && canBorrow && (<div className="grid grid-cols-2 gap-3 mb-4"><input className="w-full p-2 rounded text-sm tech-input" placeholder="借用人 Borrower Name" value={borrowName} onChange={e => setBorrowName(e.target.value)} /><input type="date" className="w-full p-2 rounded text-sm tech-input" value={borrowDate} onChange={e => setBorrowDate(e.target.value)} /></div>)}{rma.isBorrowed && (<div className="mb-4"><label className="block text-xs text-gray-500 mb-1">歸還日期 Return Date</label><input type="date" className="w-full p-2 rounded text-sm tech-input" value={returnDate} onChange={e => setReturnDate(e.target.value)} /></div>)}<div className="bg-black p-3 rounded border border-zinc-700 max-h-64 overflow-y-auto"><p className="text-xs text-gray-500 mb-2 font-bold">借還紀錄 HISTORY</p>{safeDisplayLog.length > 0 ? (safeDisplayLog.map((log, idx) => (<div key={idx} className="flex justify-between items-center text-xs text-gray-300 border-b border-zinc-800 py-2 last:border-0">{editingIndex === idx ? (<div className="flex gap-2 w-full items-center"><input type="date" className="bg-zinc-900 border border-zinc-600 rounded px-1 w-24 text-white" value={editValues.date} onChange={e => setEditValues({ ...editValues, date: e.target.value })} /><input type="text" className="bg-zinc-900 border border-zinc-600 rounded px-1 flex-1 text-white" value={editValues.name} onChange={e => setEditValues({ ...editValues, name: e.target.value })} /><button onClick={() => handleSaveLog(idx)} className="text-green-400 hover:text-green-300"><Icon name="CheckCircle" size={16} /></button><button onClick={() => setEditingIndex(-1)} className="text-red-400 hover:text-red-300"><Icon name="X" size={16} /></button></div>) : (<React.Fragment><div className="flex items-center gap-2 flex-1"><span className="w-24 font-mono-tech text-gray-500">{log.date}</span><span className={log.action.includes('借出') ? 'text-orange-400 w-32 font-bold' : 'text-green-400 w-32 font-bold'}>{log.action}</span><div className="flex flex-col"><span className="text-lg text-white font-bold">{log.name}</span></div></div><button onClick={() => handleEditLog(idx)} className="text-gray-500 hover:text-white p-1"><Icon name="Edit" size={14} /></button></React.Fragment>)}</div>))) : (<p className="text-xs text-gray-600 text-center italic">無紀錄 No History</p>)}</div></div>
+                        </div>
+                    </div>
+                );
+            }
+
+            return (
+                <div className="w-full px-6 md:px-12 pb-32 animate-fade-in">
+                    <div className="flex items-center justify-between mb-8 sticky top-0 bg-black/90 backdrop-blur border-b border-zinc-800 py-5 z-20 px-6 rounded-b-xl shadow-lg">
+                        <div className="flex items-center gap-6"><button onClick={() => onBack()} className="text-gray-500 hover:text-white flex items-center gap-2 text-base font-bold transition-colors"><Icon name="ArrowLeft" size={20} /> 返回 BACK</button><div className="h-8 w-px bg-zinc-700"></div><h2 className="text-3xl font-mono-tech font-bold text-white tracking-tight">{rma.rmaNumber}</h2><span className={`px-4 py-1 text-sm rounded border font-bold tracking-wide uppercase ${(rma.status.includes('寄出') || rma.status.includes('Shipped')) ? 'text-green-400 border-green-500' : 'text-gray-400 border-gray-600'}`}>{rma.status}</span></div>
+                        <div className="flex gap-4"><button onClick={onSave} className="px-10 py-3 bg-white text-black rounded font-bold text-lg flex items-center gap-2 hover:bg-gray-200"><Icon name="Save" size={24} /> 儲存 SAVE</button></div>
+                    </div>
+                    <div className={activeZone === 'CS' ? 'max-w-4xl mx-auto' : 'grid grid-cols-1 lg:grid-cols-12 gap-10'}>
+                        <div className={activeZone === 'CS' ? 'space-y-8' : 'lg:col-span-5 space-y-8'}>
+                            {activeZone === 'TECH' ? (<div className="tech-card p-8 rounded-xl border-l-4 border-l-zinc-600 bg-zinc-900/80"><SectionHeader zh="工單資訊摘要" en="TICKET INFO (READ ONLY)" icon="Database" color="text-gray-400" /><div className="space-y-6 divide-y divide-zinc-800"><div className="grid grid-cols-2 gap-4 pb-2"><div><label className="text-xs text-gray-500 block mb-1 font-bold">外部單號 REF NO.</label><div className="text-yellow-500 font-mono-tech text-xl">{rma.refNumber || '-'}</div></div><div><label className="text-xs text-gray-500 block mb-1 font-bold">建立時間 CREATED</label><div className="text-gray-400 font-mono-tech">{rma.creationDate.replace('T', ' ')}</div></div></div><div className="py-4"><label className="text-xs text-gray-500 block mb-2 font-bold flex items-center gap-2"><Icon name="Box" size={14} /> 產品資訊 PRODUCT</label><div className="bg-black/50 p-4 rounded border border-zinc-800"><div className="flex justify-between items-end mb-2"><div><div className="text-2xl text-white font-bold tracking-tight">{rma.brand}</div><div className="text-lg text-gray-300 font-bold">{rma.model}</div></div><div className="text-right"><span className={`text-[10px] px-2 py-1 rounded border ${rma.warrantyStatus === '保固內' ? 'border-green-900 text-green-500' : 'border-red-900 text-red-500'}`}>{rma.warrantyStatus}</span></div></div><div className="flex justify-between items-center border-t border-zinc-800 pt-2 mt-2"><span className="text-xs text-gray-600">SERIAL NO.</span><span className="text-yellow-500 font-mono-tech tracking-wider">{rma.serialNumber || 'N/A'}</span></div></div>{rma.customerDescription && (<div className="mt-3"><label className="text-xs text-gray-500 block mb-1 font-bold">客戶反饋 ISSUE</label><div className="text-gray-300 text-sm italic border-l-2 border-zinc-600 pl-2">{rma.customerDescription}</div></div>)}</div><div className="py-4"><label className="text-xs text-gray-500 block mb-2 font-bold flex items-center gap-2"><Icon name="User" size={14} /> 客戶資料 CLIENT</label><div className="flex justify-between items-center"><div><div className="text-xl text-white font-bold">{rma.customerType === 'B' ? rma.dealerName : rma.customerName}</div><div className="text-sm text-gray-500 mt-1 font-mono-tech">{rma.customerType === 'B' ? rma.customerContact : rma.customerContact}</div></div><span className={`px-3 py-1 rounded text-xs font-bold border ${rma.customerType === 'B' ? 'border-blue-900 text-blue-400 bg-blue-900/10' : 'border-purple-900 text-purple-400 bg-purple-900/10'}`}>{rma.customerType === 'B' ? '經銷商 B2B' : '消費者 B2C'}</span></div>{rma.customerType === 'B' && (<div className="mt-3 pt-3 border-t border-zinc-800"><p className="text-[10px] text-gray-500 font-bold mb-1">終端客戶 END USER</p><p className="text-white text-sm">{rma.endUserName} <span className="text-gray-500 text-xs ml-1">{rma.endUserPhone}</span></p></div>)}</div><div className="pt-4"><div className="grid grid-cols-2 gap-4"><div><label className="text-xs text-gray-500 block mb-1 font-bold">客服決策 DECISION</label><div className={`font-bold text-sm ${rma.csAction === 'direct_swap' ? 'text-purple-400' : (rma.csAction === 'standard_rma' ? 'text-blue-400' : 'text-gray-500')}`}>{rma.csAction === 'direct_swap' ? '直接換新 Swap' : (rma.csAction === 'standard_rma' ? '舊品檢修 Repair' : '未選擇 Pending')}</div></div><div><label className="text-xs text-gray-500 block mb-1 font-bold">簽收時間 RECEIVED</label>{rma.isReceived ? (rma.csAction === 'standard_rma' ? (<input type="datetime-local" className="w-full p-2 rounded tech-input text-green-400 font-bold border-green-800/50 focus:border-green-500 text-sm" value={rma.receivedDate} onChange={e => onChange('receivedDate', e.target.value)} />) : (<div className="text-green-400 font-mono-tech font-bold flex items-center gap-2"><Icon name="CheckCircle" size={16} /> {rma.receivedDate.replace('T', ' ')}</div>)) : (<div className="text-gray-600 italic text-sm">等待簽收 Pending...</div>)}</div></div></div></div><div className="mt-6 p-3 bg-zinc-800/50 rounded border border-zinc-700 text-center"><p className="text-[10px] text-gray-500">此區域資料由客服維護 (除簽收時間外)，如需修改請洽客服人員</p></div></div>) : (<div className="tech-card p-8 rounded-xl border-l-4 border-l-blue-500 cs-zone-bg"><SectionHeader zh="客服：資料填寫" en="CS: DATA ENTRY" icon="User" color="text-blue-400" /><div className="flex justify-between items-center mb-6 bg-zinc-900 p-4 rounded border border-zinc-800"><div className="flex gap-4 flex-1">{['C', 'B'].map(t => <button key={t} onClick={() => onChange('customerType', t)} className={`flex-1 py-3 text-base font-bold rounded border transition-all ${rma.customerType === t ? 'bg-white text-black border-white shadow-md' : 'bg-black text-gray-500 border-zinc-700 hover:border-gray-500'}`}>{t === 'C' ? '消費者 (C)' : '經銷商 (B)'}</button>)}</div><label className={`ml-6 flex items-center gap-2 text-sm px-4 py-3 rounded border cursor-pointer transition-all ${rma.tmsImported ? 'text-green-400 border-green-900 bg-green-900/10' : 'text-gray-500 border-zinc-800 hover:border-zinc-600'}`}><input type="checkbox" className="hidden" checked={rma.tmsImported} onChange={e => onChange('tmsImported', e.target.checked)} /> {rma.tmsImported ? 'TMS: 已匯入' : 'TMS: 未匯入'}</label></div><div className="space-y-6"><div><DualLabel zh="填單時間" en="Creation Time" /><input type="datetime-local" className="w-full p-3 rounded tech-input text-gray-300" value={rma.creationDate} onChange={e => onChange('creationDate', e.target.value)} /></div><div><DualLabel zh="外部單號" en="Ref No." /><input className="w-full p-3 rounded tech-input font-mono-tech text-yellow-500" value={rma.refNumber || ''} onChange={e => onChange('refNumber', e.target.value)} /></div><div className="p-4 border border-zinc-800 rounded bg-zinc-900/30 mb-6"><DualLabel zh="產品資訊" en="PRODUCT INFO" /><div className="grid grid-cols-2 gap-4 mb-4"><div><label className="text-xs text-gray-500 font-bold mb-1 block">品牌 Brand</label><select className="w-full p-3 rounded tech-input text-white" value={rma.brand} onChange={e => { onChange('brand', e.target.value); onChange('model', ''); }}>{Object.keys(data.brands).map(b => <option key={b} value={b}>{b}</option>)}</select></div><div><label className="text-xs text-gray-500 font-bold block mb-1">型號 Model</label><select className="w-full p-3 rounded tech-input text-white" value={rma.model} onChange={e => onChange('model', e.target.value)}><option value="">選擇型號 Select...</option>{currentBrandData.models.map(m => <option key={m} value={m}>{m}</option>)}{!currentBrandData.models.includes(rma.model) && rma.model && (<option value={rma.model}>{rma.model}</option>)}</select></div></div><div><DualLabel zh="序號" en="Serial Number" /><input className="w-full p-3 rounded tech-input font-mono-tech" value={rma.serialNumber || ''} onChange={e => onChange('serialNumber', e.target.value)} /></div><div className="mt-4"><DualLabel zh="保固狀態" en="Warranty Status" /><div className="flex gap-4"><button onClick={() => onChange('warrantyStatus', '保固內')} className={`flex-1 py-2 rounded text-sm font-bold border transition-all ${rma.warrantyStatus === '保固內' ? 'bg-green-900 text-green-100 border-green-500' : 'bg-black text-gray-500 border-zinc-700 hover:border-zinc-500'}`}>保固內 In Warranty</button><button onClick={() => onChange('warrantyStatus', '過保')} className={`flex-1 py-2 rounded text-sm font-bold border transition-all ${rma.warrantyStatus === '過保' ? 'bg-red-900 text-red-100 border-red-500' : 'bg-black text-gray-500 border-zinc-700 hover:border-zinc-500'}`}>已過保 Expired</button></div></div><div className="mt-4"><DualLabel zh="客戶反饋問題" en="Customer Issue / Description" /><textarea rows={3} className="w-full p-3 rounded tech-input leading-relaxed" placeholder="客戶描述的故障狀況..." value={rma.customerDescription || ''} onChange={e => onChange('customerDescription', e.target.value)} /></div></div>{rma.customerType === 'B' ? (<div><label className="text-xs text-gray-500 font-bold mb-1 block">經銷商名稱 Dealer Name</label><select className="w-full p-3 rounded mb-4 tech-input text-white" value={rma.dealerName || ''} onChange={e => onChange('dealerName', e.target.value)}><option value="">請選擇 Select...</option>{data.dealers.map(d => <option key={d} value={d}>{d}</option>)}</select><div className="grid grid-cols-2 gap-4 mb-4"><div><DualLabel zh="負責人員" en="Contact Person" /><input className="w-full p-3 rounded tech-input" value={rma.customerName || ''} onChange={e => onChange('customerName', e.target.value)} /></div><div><DualLabel zh="連絡電話" en="Contact Phone" /><input className="w-full p-3 rounded tech-input" value={rma.customerContact || ''} onChange={e => onChange('customerContact', e.target.value)} /></div></div><div className="p-5 border border-zinc-800 rounded bg-zinc-900/30"><p className="text-sm text-gray-500 mb-4 font-bold uppercase tracking-wider">終端客戶資料 END USER INFO</p><div className="grid grid-cols-2 gap-4 mb-4"><input className="w-full p-3 rounded text-base tech-input" placeholder="姓名 Name" value={rma.endUserName || ''} onChange={e => onChange('endUserName', e.target.value)} /><input className="w-full p-3 rounded text-base tech-input" placeholder="電話 Phone" value={rma.endUserPhone || ''} onChange={e => onChange('endUserPhone', e.target.value)} /></div><input className="w-full p-3 rounded tech-input text-base" placeholder="電子信箱 Email" value={rma.endUserEmail || ''} onChange={e => onChange('endUserEmail', e.target.value)} /></div></div>) : (<div className="space-y-4"><div className="grid grid-cols-2 gap-4"><div><DualLabel zh="姓名" en="Name" required /><input className="w-full p-3 rounded tech-input" value={rma.customerName || ''} onChange={e => onChange('customerName', e.target.value)} /></div><div><DualLabel zh="電話" en="Phone" /><input className="w-full p-3 rounded tech-input" value={rma.customerContact || ''} onChange={e => onChange('customerContact', e.target.value)} /></div></div><div><DualLabel zh="電子信箱" en="Email" /><input className="w-full p-3 rounded tech-input" value={rma.endUserEmail || ''} onChange={e => onChange('endUserEmail', e.target.value)} /></div></div>)}<div className="p-5 border border-zinc-800 rounded bg-zinc-900/30"><DualLabel zh="客服決策" en="CS Decision" />{!rma.csAction && <p className="text-gray-500 text-xs mb-2 font-bold flex items-center gap-2"><Icon name="Clock" size={12} /> 暫存中：尚未決定流程</p>}<div className="flex gap-4 mt-2"><button onClick={() => { onChange('csAction', 'standard_rma'); if (rma.status === '新品待寄出' || rma.status === 'Pending Ship') { onChange('status', '待收件'); } }} className={`flex-1 py-3 text-base rounded border transition-all ${rma.csAction === 'standard_rma' ? 'bg-white text-black font-bold' : 'bg-black text-gray-500 border-zinc-700 hover:border-gray-500'}`}>舊品檢修 Standard RMA</button><button onClick={() => { onChange('csAction', 'direct_swap'); if (rma.status !== '新品已寄出' && rma.status !== 'Shipped') onChange('status', '新品待寄出'); if (!rma.recipientName) { onChange('recipientName', rma.customerType === 'B' ? rma.endUserName : rma.customerName); onChange('recipientPhone', rma.customerType === 'B' ? rma.endUserPhone : rma.customerContact); } }} className={`flex-1 py-3 text-base rounded border transition-all ${rma.csAction === 'direct_swap' ? 'bg-zinc-800 text-white font-bold shadow-[0_0_10px_rgba(255,255,255,0.2)]' : 'bg-black text-gray-500 border-zinc-700 hover:border-gray-500'}`}>直接換新 Direct Swap</button></div>{rma.csAction === 'direct_swap' && (<div className="mt-6 pt-6 border-t border-zinc-700 animate-fade-in">{rma.isReceived && (<div className="mb-4 bg-green-900/20 border border-green-500 p-4 rounded animate-fade-in"><div className="flex items-center gap-2 mb-2"><Icon name="CheckCircle" size={20} className="text-green-400" /><span className="text-sm font-bold text-green-400">舊品已簽收 OLD UNIT RECEIVED</span></div><div className="text-white font-mono-tech font-bold text-lg">{rma.receivedDate.replace('T', ' ')}</div></div>)}<div className="bg-black p-4 rounded border border-zinc-700 mb-4"><div className="flex justify-between items-center mb-3"><p className="text-sm text-yellow-400 font-bold flex items-center gap-2"><Icon name="Package" size={18} /> 新品收件資訊 RECIPIENT</p></div><div className="space-y-3"><div className="grid grid-cols-2 gap-3"><div><label className="text-xs text-gray-500 block mb-1">出貨品牌 Brand</label><select className="w-full p-2 rounded text-base tech-input text-white" value={rma.recipientBrand || ''} onChange={e => { onChange('recipientBrand', e.target.value); onChange('recipientModel', ''); }}><option value="">選擇品牌 Select...</option>{Object.keys(data.brands).map(b => <option key={b} value={b}>{b}</option>)}</select></div><div><label className="text-xs text-gray-500 block mb-1">出貨型號 Model</label><select className="w-full p-2 rounded text-base tech-input text-white" value={rma.recipientModel || ''} onChange={e => onChange('recipientModel', e.target.value)}><option value="">選擇型號 Select...</option>{recipientBrandData.models.map(m => <option key={m} value={m}>{m}</option>)}</select></div></div><div className="grid grid-cols-2 gap-3"><div><label className="text-xs text-gray-500 block mb-1">收件人 Name</label><input className="w-full p-2 rounded text-base tech-input" value={rma.recipientName || ''} onChange={e => onChange('recipientName', e.target.value)} /></div><div><label className="text-xs text-gray-500 block mb-1">電話 Phone</label><input className="w-full p-2 rounded text-base tech-input" value={rma.recipientPhone || ''} onChange={e => onChange('recipientPhone', e.target.value)} /></div></div><div><label className="text-xs text-gray-500 block mb-1">地址 Address</label><input className="w-full p-2 rounded text-base tech-input" value={rma.recipientAddress || ''} onChange={e => onChange('recipientAddress', e.target.value)} /></div></div></div>{(!rma.recipientAddress) ? (<div className="p-3 bg-red-900/30 border border-red-700 rounded text-center"><p className="text-xs text-red-300 font-bold">※ 尚缺收件地址，工單將暫留於 [新品待寄出] 直到資料補齊</p></div>) : (<p className="text-xs text-gray-500 text-center mt-2">※ 資料完整，物流部可執行出貨</p>)}</div>)}{rma.csAction === 'standard_rma' && (<div className="mt-6 pt-6 border-t border-zinc-700 animate-fade-in"><p className="text-sm text-blue-400 font-bold mb-2">流程說明</p><ul className="text-xs text-gray-400 list-disc pl-4 space-y-1 mb-4"><li>請等待客戶寄回舊品</li><li>收到舊品後，請務必於清單點選 [簽收] 以計算維修時效 (14天)</li><li>維修部將依照收件日期安排急件檢修</li></ul>{((rma.status === '完修待寄回' && (rma.resolution === 'repair' || rma.resolution === 'irreparable')) || (['新品待寄出', '新品已寄出'].includes(rma.status) && ['swap_new'].includes(rma.resolution))) && (<div className="bg-blue-900/20 p-4 rounded border border-blue-700 mb-4 animate-fade-in"><div className="flex justify-between items-center mb-3"><p className="text-sm text-blue-400 font-bold flex items-center gap-2"><Icon name="Truck" size={18} /> {(rma.resolution === 'repair' || rma.resolution === 'irreparable') ? '舊品/壞品返還' : '新品/良品'}收件資訊 RECIPIENT</p></div><div className="space-y-3">{rma.resolution === 'swap_new' && (<div className="grid grid-cols-2 gap-3"><div><label className="text-xs text-gray-500 block mb-1">出貨品牌 Brand</label><select className="w-full p-2 rounded text-base tech-input text-white" value={rma.recipientBrand || ''} onChange={e => { onChange('recipientBrand', e.target.value); onChange('recipientModel', ''); }}><option value="">選擇品牌 Select...</option>{Object.keys(data.brands).map(b => <option key={b} value={b}>{b}</option>)}</select></div><div><label className="text-xs text-gray-500 block mb-1">出貨型號 Model</label><select className="w-full p-2 rounded text-base tech-input text-white" value={rma.recipientModel || ''} onChange={e => onChange('recipientModel', e.target.value)}><option value="">選擇型號 Select...</option>{recipientBrandData.models.map(m => <option key={m} value={m}>{m}</option>)}</select></div></div>)}<div className="grid grid-cols-2 gap-3"><div><label className="text-xs text-gray-500 block mb-1">收件人 Name</label><input className="w-full p-2 rounded text-base tech-input" value={rma.recipientName || ''} onChange={e => onChange('recipientName', e.target.value)} /></div><div><label className="text-xs text-gray-500 block mb-1">電話 Phone</label><input className="w-full p-2 rounded text-base tech-input" value={rma.recipientPhone || ''} onChange={e => onChange('recipientPhone', e.target.value)} /></div></div><div><label className="text-xs text-gray-500 block mb-1">地址 Address</label><input className="w-full p-2 rounded text-base tech-input" value={rma.recipientAddress || ''} onChange={e => onChange('recipientAddress', e.target.value)} /></div></div></div>)}{rma.isReceived && (<div id="receive-check-section" className="mt-4 bg-green-900/20 border border-green-500 p-4 rounded animate-fade-in"><div className="flex items-center gap-2 mb-3"><Icon name="CheckCircle" size={20} className="text-green-400" /><span className="text-sm font-bold text-green-400">已簽收 ITEM RECEIVED</span></div><DualLabel zh="舊品收件時間 (計算時效起點)" en="Item Received Time (Start of 14-Day Deadline)" required /><p className="text-xs text-gray-500 mb-2">※ 系統自動帶入簽收時間，可手動修正</p><input type="datetime-local" className="w-full p-3 rounded tech-input text-green-400 font-bold border-green-800/50 focus:border-green-500 text-sm" value={rma.receivedDate} onChange={e => onChange('receivedDate', e.target.value)} /></div>)}</div>)}</div></div></div>)}</div>{activeZone !== 'CS' && (<div className="lg:col-span-7 space-y-8"><div className="tech-card p-8 rounded-xl border-l-4 border-l-gray-500 tech-zone-bg"><SectionHeader zh="檢修與物流" en="INSPECTION & LOGISTICS" icon="Cpu" color="text-white" />{deadlineInfo && (<div className="mb-6 p-4 bg-red-900/10 border border-red-800/50 rounded flex justify-between items-center"><div><p className="text-xs text-red-400 font-bold">急件時效 DEADLINE</p><p className="text-sm text-white">應於 {deadlineInfo.date} 前完修</p></div><div className={`text-2xl font-bold font-mono-tech ${deadlineInfo.daysLeft < 3 ? 'text-red-500 animate-pulse' : 'text-white'}`}>剩 {deadlineInfo.daysLeft} 天</div></div>)}{(rma.csAction === 'direct_swap' || (rma.resolution === 'repair' && ['完修待寄回', '已寄回'].includes(rma.status)) || (rma.resolution === 'irreparable' && ['完修待寄回', '已寄回'].includes(rma.status)) || ['新品待寄出', '新品已寄出'].includes(rma.status) || ['swap_new'].includes(rma.resolution)) && (<div className="mb-8 p-6 border border-teal-900/50 bg-teal-900/10 rounded animate-fade-in"><div className="flex justify-between items-start mb-4"><p className="text-base text-teal-400 font-bold flex items-center gap-2"><Icon name="Package" size={20} /> 產品流向 (物流出貨) PRODUCT SHIPPING FLOW</p>{(rma.csAction === 'direct_swap' || ['swap_new'].includes(rma.resolution)) && (<div className={`px-3 py-1 rounded border text-xs font-bold flex items-center gap-2 ${(rma.trackingNumber || rma.status === '新品已寄出') ? 'bg-green-900/50 text-green-300 border-green-500' : 'bg-red-900/50 text-red-300 border-red-500 animate-pulse'}`}>{(rma.trackingNumber || rma.status === '新品已寄出') ? <React.Fragment><Icon name="CheckCircle" size={14} /> 新品已寄出 SHIPPED</React.Fragment> : <React.Fragment><Icon name="AlertTriangle" size={14} /> 新品尚未寄出 NOT SHIPPED</React.Fragment>}</div>)}</div>{rma.resolution === 'repair' || rma.resolution === 'irreparable' ? (<span className="mb-2 inline-block px-2 py-1 bg-blue-900 text-blue-200 text-xs font-bold rounded">原機/壞品返還 OLD PRODUCT RETURN</span>) : (<span className="mb-2 inline-block px-2 py-1 bg-purple-900 text-purple-200 text-xs font-bold rounded">新品/良品出貨 NEW/SWAP UNIT</span>)}{!rma.trackingNumber && (<div className="flex gap-4 mb-4"><button onClick={() => onChange('status', (rma.resolution === 'repair' || rma.resolution === 'irreparable') ? '完修待寄回' : '新品待寄出')} className={`flex-1 py-3 text-sm rounded border transition-all ${['新品待寄出', '完修待寄回'].includes(rma.status) ? 'bg-yellow-900/50 text-yellow-200 border-yellow-500 font-bold' : 'bg-black text-gray-500 border-zinc-700'}`}>待寄出 Pending</button><button onClick={() => { openShip(rma, false); }} className={`flex-1 py-3 text-sm rounded border transition-all ${['新品已寄出', '已寄回'].includes(rma.status) ? 'bg-green-900/50 text-green-200 border-green-500 font-bold' : 'bg-black text-gray-500 border-zinc-700'}`}>已寄出 Shipped</button></div>)}<div className="bg-black p-4 rounded border border-zinc-700 mb-4"><div className="flex justify-between items-center mb-2"><p className="text-xs text-gray-500">收件資訊 (FROM CS)</p>{rma.returnTarget && (<span className={`text-[10px] font-bold px-2 py-0.5 rounded border ${rma.returnTarget === 'store' ? 'text-purple-400 border-purple-500' : 'text-blue-400 border-blue-500'}`}>{rma.returnTarget === 'store' ? '寄回門市 TO STORE' : '寄回客人 TO CUSTOMER'}</span>)}</div>{rma.recipientName ? (<React.Fragment>{rma.recipientBrand && rma.recipientModel && (<div className="mb-2 pb-2 border-b border-zinc-800"><p className="text-xs text-yellow-500 font-bold mb-1">出貨產品 SHIP ITEM</p><p className="text-white font-bold">{rma.recipientBrand} {rma.recipientModel}</p></div>)}<p className="text-sm text-white font-bold">{rma.recipientName} <span className="font-normal text-gray-400 mx-2">/</span> {rma.recipientPhone}</p><p className="text-sm text-gray-400 mt-1">{rma.recipientAddress}</p></React.Fragment>) : (<p className="text-sm text-red-400 italic">等待客服補齊收件資訊...</p>)}</div>{(!rma.trackingNumber && rma.recipientAddress) && (<div className="flex justify-end"><button onClick={() => openShip(rma, false)} className="px-6 py-3 bg-white text-black font-bold rounded flex items-center gap-2 hover:bg-gray-200 shadow-lg"><Icon name="Truck" size={18} /> 執行出貨 SHIP NOW</button></div>)}{rma.trackingNumber && (<div className="bg-green-900/20 p-4 rounded border border-green-800/50 animate-fade-in flex items-center justify-between"><div><p className="text-xs text-green-400 font-bold">已出貨 SHIPPED</p><p className="text-base text-white mt-1 font-mono-tech">{rma.courier} : {rma.trackingNumber}</p></div><button onClick={() => openShip(rma, false)} className="text-xs border border-green-600 text-green-400 px-3 py-1 rounded hover:bg-green-900">修改 Edit</button></div>)}</div>)}<div className={`mb-8 ${(!rma.isReceived) ? 'locked-section' : ''}`}><SectionHeader zh="故障診斷 (舊品)" en="FAULT DIAGNOSIS" icon="AlertTriangle" /><div className="space-y-6"><div className="mb-4"><label className="text-xs text-gray-500 block mb-2 font-bold">外觀檢查 PRODUCT CONDITION</label><div className="flex flex-wrap gap-2">{data.conditions.map(c => (<button key={c} onClick={() => onChange('productCondition', c)} className={`px-3 py-2 rounded text-sm font-bold border transition-all ${rma.productCondition === c ? 'bg-blue-900 text-blue-200 border-blue-500' : 'bg-black text-gray-500 border-zinc-700 hover:border-zinc-500'}`}>{c}</button>))}</div></div><div className="mb-4"><label className="text-xs text-gray-500 block mb-2 font-bold">配件檢查 ACCESSORIES CHECK</label><div className="flex flex-wrap gap-2">{data.accessories.map(acc => { const hasAcc = rma.accessories && rma.accessories.includes(acc); return (<button type="button" key={acc} onClick={() => { const currentAcc = rma.accessories || []; const newAcc = hasAcc ? currentAcc.filter(a => a !== acc) : [...currentAcc, acc]; onChange('accessories', newAcc); }} className={`px-3 py-2 rounded text-sm font-bold border transition-all ${hasAcc ? 'bg-green-900 text-green-200 border-green-500' : 'bg-black text-gray-500 border-zinc-700 hover:border-zinc-500'}`}>{hasAcc ? <React.Fragment><Icon name="CheckCircle" size={14} className="inline mr-1" /> {acc}</React.Fragment> : acc}</button>); })}</div></div><textarea rows={4} className="w-full p-3 rounded tech-input leading-relaxed" value={rma.reportedIssue || ''} onChange={e => onChange('reportedIssue', e.target.value)} placeholder="工程師檢測說明 Engineer findings..." /><div className="flex flex-wrap gap-2">{currentBrandData.commonIssues.map(i => <span key={i} onClick={() => onChange('reportedIssue', (rma.reportedIssue + ' ' + i).trim())} className="text-sm bg-zinc-900 border border-zinc-700 text-gray-400 px-3 py-1.5 rounded cursor-pointer hover:text-white hover:border-gray-500 transition-colors">+ {i}</span>)}</div><div className="bg-zinc-900/50 p-6 rounded border border-zinc-800"><p className="text-sm font-bold text-gray-500 mb-4 uppercase tracking-widest">功能檢測清單 CHECKLIST</p>{Object.keys(safeDiagnosis).map(k => (<div key={k} className="flex justify-between items-center mb-4 pb-4 border-b border-zinc-800 last:border-0 last:mb-0 last:pb-0"><span className="text-base text-gray-300 font-bold">{CHECKLIST_LABELS[k] || k}</span><select className={`text-sm p-2 rounded w-36 font-bold border cursor-pointer transition-colors ${safeDiagnosis[k] === 'pass' ? 'text-green-400 border-green-900 bg-green-900/10' : safeDiagnosis[k] === 'fail' ? 'text-red-400 border-red-900 bg-red-900/10' : 'text-gray-500 border-zinc-700 bg-black'}`} value={safeDiagnosis[k]} onChange={e => onChange('diagnosis', { ...safeDiagnosis, [k]: e.target.value })}>{Object.entries(CHECKLIST_OPTIONS).map(([val, label]) => (<option key={val} value={val}>{label}</option>))}</select></div>))}</div></div></div><div className={`mb-8 ${(!rma.isReceived) ? 'locked-section' : ''}`}><SectionHeader zh="維修執行" en="REPAIR EXECUTION" icon="Settings" /><div className="space-y-6"><div><DualLabel zh="維修處置" en="Action Taken" /><textarea rows={3} className="w-full p-3 rounded tech-input" value={rma.repairAction || ''} onChange={e => onChange('repairAction', e.target.value)} /></div><div><DualLabel zh="更換零件" en="Parts Replaced" /><input className="w-full p-3 rounded tech-input" value={rma.partsReplaced || ''} onChange={e => onChange('partsReplaced', e.target.value)} /></div></div></div><div className={`mb-8 ${(!rma.isReceived && rma.csAction !== 'direct_swap') ? 'locked-section' : ''}`}><SectionHeader zh="結案狀態" en="RESOLUTION & STATUS" icon="Activity" /><div className="space-y-8"><div><DualLabel zh="最終判定" en="Final Resolution" /><div className="flex gap-4">{[{ v: 'repair', l: '舊機修復 Repair' }, { v: 'swap_new', l: '更換新品 Swap New' }, { v: 'irreparable', l: '無法修復 Irreparable' }].map(op => (<button key={op.v} onClick={() => { onChange('resolution', op.v); if (op.v === 'repair') onChange('status', '完修待寄回'); if (op.v === 'irreparable') onChange('status', '完修待寄回'); if (op.v === 'swap_new') { if (rma.status !== '新品已寄出' && rma.status !== 'Shipped') { onChange('status', '新品待寄出'); } } }} className={`flex-1 py-3 text-base rounded border transition-all ${rma.resolution === op.v ? 'bg-white text-black font-bold shadow-lg' : 'bg-black text-gray-500 border-zinc-700 hover:border-gray-500'}`}>{op.l}</button>))}</div>{(rma.resolution === 'swap_new' || rma.resolution === 'repair' || rma.resolution === 'irreparable') && (<div className="mt-4 p-4 bg-zinc-900 border border-zinc-700 rounded animate-fade-in"><p className="text-xs text-gray-500 font-bold mb-2">{rma.resolution === 'swap_new' ? '新品寄送對象 NEW UNIT SHIP TARGET' : '舊品/壞品寄送對象 UNIT SHIP TARGET'}</p><div className="flex gap-4"><button onClick={() => { onChange('returnTarget', 'customer'); if (rma.customerType === 'B') { onChange('recipientName', rma.endUserName); onChange('recipientPhone', rma.endUserPhone); } else { onChange('recipientName', rma.customerName); onChange('recipientPhone', rma.customerContact); } }} className={`flex-1 py-2 text-sm rounded border transition-all ${rma.returnTarget === 'customer' ? 'bg-blue-900 text-blue-100 border-blue-500 font-bold' : 'bg-black text-gray-400 border-zinc-700 hover:border-zinc-500'}`}>寄回客人 To Customer</button><button onClick={() => { onChange('returnTarget', 'store'); if (rma.customerType === 'B') { onChange('recipientName', rma.dealerName); onChange('recipientPhone', rma.customerContact); } }} className={`flex-1 py-2 text-sm rounded border transition-all ${rma.returnTarget === 'store' ? 'bg-purple-900 text-purple-100 border-purple-500 font-bold' : 'bg-black text-gray-400 border-zinc-700 hover:border-zinc-500'}`}>寄回門市 To Store</button></div>{rma.resolution === 'swap_new' && (<div className="mt-3 pt-3 border-t border-zinc-700 grid grid-cols-2 gap-3"><div><label className="text-xs text-gray-500 block mb-1">出貨品牌 Brand</label><select className="w-full p-2 rounded text-base tech-input text-white" value={rma.recipientBrand || ''} onChange={e => { onChange('recipientBrand', e.target.value); onChange('recipientModel', ''); }}><option value="">選擇品牌 Select...</option>{Object.keys(data.brands).map(b => <option key={b} value={b}>{b}</option>)}</select></div><div><label className="text-xs text-gray-500 block mb-1">出貨型號 Model</label><select className="w-full p-2 rounded text-base tech-input text-white" value={rma.recipientModel || ''} onChange={e => onChange('recipientModel', e.target.value)}><option value="">選擇型號 Select...</option>{recipientBrandData.models.map(m => <option key={m} value={m}>{m}</option>)}</select></div></div>)}</div>)}{!rma.resolution && <p className="text-red-500 text-xs mt-2">* 請選擇最終判定以結案</p>}</div>{rma.resolution && (<div className="animate-fade-in p-5 border border-red-900/30 bg-red-900/10 rounded"><DualLabel zh="壞品流向 / 狀態設定" en="Defective Location / Status Flow" /><div className="flex flex-wrap gap-3">{[{ v: 'warehouse', l: '留倉 (修復入庫) Inventory' }, { v: 'waiting_parts', l: '待料中 Waiting Parts' }, { v: 'brand_rma', l: '待寄原廠 To Brand' }, { v: 'shipped_brand', l: '已寄原廠 Shipped Brand' }].map(loc => { return (<button key={loc.v} onClick={() => { const isShipped = rma.status === '新品已寄出' || rma.status === 'Shipped'; const isSwap = rma.resolution === 'swap_new' || rma.csAction === 'direct_swap'; const isActive = (loc.v === 'waiting_parts' && (rma.status === '待料中' || rma.status === 'Waiting Parts')) || rma.defectiveLoc === loc.v; if (isActive) { if (loc.v === 'waiting_parts') { if (!isShipped) { onChange('status', rma.resolution === 'repair' ? '完修待寄回' : '新品待寄出'); } } if (rma.defectiveLoc === loc.v || (loc.v === 'waiting_parts')) { onChange('defectiveLoc', ''); if (!isShipped && loc.v !== 'waiting_parts') { onChange('status', rma.resolution === 'repair' ? '完修待寄回' : '新品待寄出'); } } return; } if (loc.v === 'waiting_parts') { onChange('defectiveLoc', 'waiting_parts'); if (!isShipped && !isSwap) onChange('status', '待料中'); } else { onChange('defectiveLoc', loc.v); if (!isShipped && !isSwap) { if (loc.v === 'warehouse') onChange('status', '修復入庫'); if (loc.v === 'brand_rma') onChange('status', '待寄原廠'); if (loc.v === 'shipped_brand') onChange('status', '已寄原廠'); } } }} className={`px-5 py-2 text-sm rounded border transition-all ${(rma.defectiveLoc === loc.v || (loc.v === 'waiting_parts' && (rma.status === '待料中' || rma.status === 'Waiting Parts'))) ? 'bg-red-900 text-red-100 border-red-500 font-bold' : 'bg-black text-gray-500 border-zinc-700 hover:border-red-800'}`}>{loc.l}</button>); })}</div></div>)}</div></div><div className={`mt-8 ${(!rma.isReceived && rma.csAction !== 'direct_swap') ? 'locked-section' : ''}`}><div className="flex justify-between items-center"><div className="flex items-center gap-3 text-gray-400 text-base font-bold"><Icon name="Database" size={20} /> 系統結案 SYSTEM CLOSE</div></div></div></div></div>)}</div><div className="mt-10 flex justify-end gap-6 p-8 rounded-xl bg-zinc-900/50 border border-zinc-800 backdrop-blur-sm"><button onClick={() => onBack(true)} className="px-8 py-3 text-base font-bold text-gray-400 hover:text-white border border-zinc-700 rounded hover:border-white transition-all">取消 CANCEL</button><button onClick={onSave} className="px-10 py-3 bg-white text-black rounded font-bold text-lg flex items-center gap-3 hover:bg-gray-200 shadow-[0_0_20px_rgba(255,255,255,0.25)] transition-all hover:scale-105"><Icon name="Save" size={24} /> 儲存工單 SAVE</button></div></div>);
+        };
+
         const root = ReactDOM.createRoot(document.getElementById('root'));
         root.render(<ErrorBoundary><App /></ErrorBoundary>);
-    })();
     </script>
 </body>
 </html>
