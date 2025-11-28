@@ -3,15 +3,19 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MASTEX RMA System (v122.18 Final Stable)</title>
+    <title>MASTEX RMA System (v122.18 Final Consolidated)</title>
     
-    <!-- Libraries -->
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- React & ReactDOM -->
     <script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
     <script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+    
+    <!-- Babel for JSX -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
     
-    <!-- Firebase -->
+    <!-- Firebase Compat -->
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
     
@@ -54,11 +58,11 @@
             overlay.innerHTML = `<h2>System Error</h2><p>${msg}</p><p>${url}:${line}:${col}</p><button onclick="localStorage.clear();location.reload()" style="margin-top:20px;padding:10px;background:#900;color:#fff;border:none;">HARD RESET</button>`;
         };
     </script>
-    
     <script type="text/babel">
-        console.log("Script started");
+        // 1. SETUP
         const { useState, useEffect, useRef, Fragment } = React;
 
+        // 2. CONSTANTS (Merged from constants.ts)
         const PRESET_FIREBASE_CONFIG = {
           apiKey: "AIzaSyDm1zPY6DHErybLZ-MfJOsLEywShNBcB_c",
           authDomain: "mastex-205a8.firebaseapp.com",
@@ -114,16 +118,15 @@
         const CHECKLIST_OPTIONS = { pending: '待測 Pending', pass: '通過 PASS', fail: '失敗 FAIL', na: '不適用 N/A' };
         
         const DEFAULT_THEME_IMAGES = {
-            CS: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=2072',
-            URGENT: 'https://images.unsplash.com/photo-1597424214791-722a57ed6781?q=80&w=2070',
-            PENDING: 'https://images.unsplash.com/photo-1518770660439-4636190af475?q=80&w=2070',
-            SHIPPING: 'https://images.unsplash.com/photo-1565514020176-db7923700b8c?q=80&w=2000',
-            HISTORY: 'https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?q=80&w=2070',
-            INVENTORY: 'https://images.unsplash.com/photo-1558494949-ef526bca4899?q=80&w=2000'
+            CS: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=2072&auto=format&fit=crop',
+            URGENT: 'https://images.unsplash.com/photo-1597424214791-722a57ed6781?q=80&w=2070&auto=format&fit=crop',
+            PENDING: 'https://images.unsplash.com/photo-1518770660439-4636190af475?q=80&w=2070&auto=format&fit=crop',
+            SHIPPING: 'https://images.unsplash.com/photo-1565514020176-db7923700b8c?q=80&w=2000&auto=format&fit=crop',
+            HISTORY: 'https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?q=80&w=2070&auto=format&fit=crop',
+            INVENTORY: 'https://images.unsplash.com/photo-1558494949-ef526bca4899?q=80&w=2000&auto=format&fit=crop'
         };
-        
-        console.log("Constants defined");
 
+        // 3. COMPONENTS
         class ErrorBoundary extends React.Component {
             constructor(props) { super(props); this.state = { hasError: false, error: null }; }
             static getDerivedStateFromError(error) { return { hasError: true, error }; }
@@ -178,8 +181,6 @@
                 </svg>
             </div>
         );
-        
-        console.log("Icons defined");
 
         const DualLabel = ({ zh, en, required }) => (
             <label className="block mb-2">
@@ -242,8 +243,8 @@
         const ConfirmModal = ({ isOpen, onClose, onConfirm, title = "未儲存變更 UNSAVED CHANGES", message = "您有尚未儲存的變更，離開將導致資料遺失。\n確定要離開嗎？", confirmText = "放棄變更 LEAVE", cancelText = "繼續編輯 STAY", isAlert = false }) => {
             if (!isOpen) return null;
             return (
-                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 backdrop-blur-sm p-4">
-                    <div className={`bg-zinc-900 border ${isAlert ? 'border-zinc-600' : 'border-red-500/50'} rounded-xl w-full max-w-md p-6 shadow-2xl relative`}>
+                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 backdrop-blur-sm p-4 animate-fade-in">
+                    <div className={`bg-zinc-900 border ${isAlert ? 'border-zinc-600' : 'border-red-500/50'} rounded-xl w-full max-w-md p-6 shadow-2xl relative animate-bounce-in`}>
                         <div className="flex flex-col items-center text-center gap-4 mb-6">
                             <div className={`w-16 h-16 rounded-full flex items-center justify-center border ${isAlert ? 'bg-zinc-800 text-white border-zinc-600' : 'bg-red-900/20 text-red-500 border-red-900'}`}>
                                 <Icon name="AlertTriangle" size={32} />
@@ -279,6 +280,11 @@
             const [newDealerName, setNewDealerName] = useState('');
             const [newAccessoryName, setNewAccessoryName] = useState('');
             
+            const THEME_LABELS = {
+                CS: '客服中心', URGENT: '急件待修', PENDING: '一般待修',
+                SHIPPING: '產品待寄', HISTORY: '已出貨', INVENTORY: '舊品庫存'
+            };
+
             useEffect(() => {
                 if (isOpen) {
                     setBrands(currentBrands || INITIAL_BRANDS);
@@ -300,6 +306,7 @@
             if (!isOpen) return null;
 
             const handleSaveAll = () => { onSave(brands, dealers, accessories, theme); if (fbConfig.apiKey) onSaveFirebase(fbConfig); else if (!fbConfig.apiKey) onSaveFirebase(null); };
+            
             const handleAddBrand = () => { if (!newBrandName.trim() || brands[newBrandName]) return; setBrands(p => ({ ...p, [newBrandName]: { models: [], commonIssues: [] } })); setSelectedBrand(newBrandName); setNewBrandName(''); };
             const handleDeleteBrand = (b) => { if (!confirm(`Delete ${b}?`)) return; setBrands(p => { const n = { ...p }; delete n[b]; return n; }); if (selectedBrand === b) setSelectedBrand(''); };
             const handleAddModel = () => { if (!selectedBrand || !newModelName.trim() || brands[selectedBrand].models.includes(newModelName)) return; setBrands(p => ({ ...p, [selectedBrand]: { ...p[selectedBrand], models: [...p[selectedBrand].models, newModelName] } })); setNewModelName(''); };
@@ -309,32 +316,58 @@
             const handleAddAccessory = () => { if (!newAccessoryName.trim() || accessories.includes(newAccessoryName)) return; setAccessories(p => [...p, newAccessoryName]); setNewAccessoryName(''); };
             const handleDeleteAccessory = (a) => { if (!confirm(`Delete ${a}?`)) return; setAccessories(p => p.filter(x => x !== a)); };
 
-            return (
-                <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
-                    <div className="bg-zinc-900 border border-zinc-700 rounded-xl w-full max-w-4xl h-[85vh] flex flex-col shadow-2xl relative overflow-hidden">
-                        <div className="p-6 border-b border-zinc-700 flex justify-between items-center bg-black/50"><h3 className="text-xl font-bold text-white flex items-center gap-3"><Icon name="Settings" size={24} /> 系統配置 SYSTEM CONFIGURATION</h3><button onClick={onClose} className="text-gray-500 hover:text-white"><Icon name="X" size={24} /></button></div>
-                        <div className="flex border-b border-zinc-700 bg-black/30 overflow-x-auto">
-                            <button onClick={() => setActiveTab('cloud')} className={`flex-1 min-w-[120px] py-4 font-bold text-sm ${activeTab === 'cloud' ? 'text-green-400 border-b-2 border-green-500 bg-green-900/20' : 'text-gray-500'}`}>☁️ 雲端連線</button>
-                            <button onClick={() => setActiveTab('theme')} className={`flex-1 min-w-[100px] py-4 font-bold text-sm ${activeTab === 'theme' ? 'text-white border-b-2 border-orange-500 bg-zinc-800/50' : 'text-gray-500'}`}>圖片主題</button>
-                            <button onClick={() => setActiveTab('brands')} className={`flex-1 min-w-[100px] py-4 font-bold text-sm ${activeTab === 'brands' ? 'text-white border-b-2 border-blue-500 bg-zinc-800/50' : 'text-gray-500'}`}>產品配置</button>
-                            <button onClick={() => setActiveTab('accessories')} className={`flex-1 min-w-[100px] py-4 font-bold text-sm ${activeTab === 'accessories' ? 'text-white border-b-2 border-teal-500 bg-zinc-800/50' : 'text-gray-500'}`}>配件管理</button>
-                            <button onClick={() => setActiveTab('dealers')} className={`flex-1 min-w-[100px] py-4 font-bold text-sm ${activeTab === 'dealers' ? 'text-white border-b-2 border-purple-500 bg-zinc-800/50' : 'text-gray-500'}`}>經銷商</button>
+            // Use helper render function to avoid complex ternary nesting
+            const renderContent = () => {
+                if (activeTab === 'brands') {
+                    return (
+                        <div className="flex flex-1 w-full h-full">
+                            <div className="w-1/3 border-r border-zinc-700 flex flex-col bg-black/20">
+                                <div className="p-4 bg-zinc-800/50 border-b border-zinc-700"><div className="flex gap-2"><input className="flex-1 bg-black border border-zinc-600 rounded px-2 py-1 text-white text-sm" placeholder="New Brand..." value={newBrandName} onChange={e => setNewBrandName(e.target.value)} /><button onClick={handleAddBrand} className="bg-blue-600 text-white px-3 py-1 rounded"><Icon name="Plus" size={16} /></button></div></div>
+                                <div className="flex-1 overflow-y-auto p-2 space-y-1">{Object.keys(brands).map(b => (<div key={b} onClick={() => setSelectedBrand(b)} className={`flex justify-between items-center px-4 py-3 rounded cursor-pointer ${selectedBrand === b ? 'bg-zinc-700 text-white font-bold border-l-4 border-blue-500' : 'text-gray-400 hover:bg-zinc-800'}`}><span>{b}</span><div onClick={(e) => { e.stopPropagation(); handleDeleteBrand(b); }} className="p-2 hover:text-red-500"><Icon name="Trash2" size={16} /></div></div>))}</div>
+                            </div>
+                            <div className="flex-1 flex flex-col bg-zinc-900 p-4">
+                                {selectedBrand ? (<React.Fragment><div className="flex gap-2 mb-4"><input className="flex-1 bg-black border border-zinc-600 rounded px-3 py-2 text-white" placeholder="Add Model..." value={newModelName} onChange={e => setNewModelName(e.target.value)} /><button onClick={handleAddModel} className="bg-green-600 text-white px-4 py-2 rounded font-bold">ADD</button></div><div className="grid grid-cols-2 md:grid-cols-3 gap-3 overflow-y-auto content-start">{brands[selectedBrand].models.map(m => (<div key={m} className="bg-black border border-zinc-700 rounded px-3 py-2 flex justify-between items-center group"><span className="text-gray-300 text-sm">{m}</span><button onClick={() => handleDeleteModel(m)} className="text-zinc-600 hover:text-red-500 opacity-0 group-hover:opacity-100"><Icon name="X" size={14} /></button></div>))}</div></React.Fragment>) : <p className="text-center text-gray-500 mt-10">Select a brand</p>}
+                            </div>
                         </div>
-                        <div className="flex-1 flex overflow-hidden">
-                            {activeTab === 'brands' && <div className="flex flex-1 w-full h-full"><div className="w-1/3 border-r border-zinc-700 flex flex-col bg-black/20"><div className="p-4 bg-zinc-800/50 border-b border-zinc-700"><div className="flex gap-2"><input className="flex-1 bg-black border border-zinc-600 rounded px-2 py-1 text-white text-sm" placeholder="New Brand..." value={newBrandName} onChange={e => setNewBrandName(e.target.value)} /><button onClick={handleAddBrand} className="bg-blue-600 text-white px-3 py-1 rounded"><Icon name="Plus" size={16} /></button></div></div><div className="flex-1 overflow-y-auto p-2 space-y-1">{Object.keys(brands).map(b => (<div key={b} onClick={() => setSelectedBrand(b)} className={`flex justify-between items-center px-4 py-3 rounded cursor-pointer ${selectedBrand === b ? 'bg-zinc-700 text-white font-bold border-l-4 border-blue-500' : 'text-gray-400 hover:bg-zinc-800'}`}><span>{b}</span><div onClick={(e) => { e.stopPropagation(); handleDeleteBrand(b); }} className="p-2 hover:text-red-500"><Icon name="Trash2" size={16} /></div></div>))}</div></div><div className="flex-1 flex flex-col bg-zinc-900 p-4">{selectedBrand ? (<React.Fragment><div className="flex gap-2 mb-4"><input className="flex-1 bg-black border border-zinc-600 rounded px-3 py-2 text-white" placeholder="Add Model..." value={newModelName} onChange={e => setNewModelName(e.target.value)} /><button onClick={handleAddModel} className="bg-green-600 text-white px-4 py-2 rounded font-bold">ADD</button></div><div className="grid grid-cols-2 md:grid-cols-3 gap-3 overflow-y-auto content-start">{brands[selectedBrand].models.map(m => (<div key={m} className="bg-black border border-zinc-700 rounded px-3 py-2 flex justify-between items-center group"><span className="text-gray-300 text-sm">{m}</span><button onClick={() => handleDeleteModel(m)} className="text-zinc-600 hover:text-red-500 opacity-0 group-hover:opacity-100"><Icon name="X" size={14} /></button></div>))}</div></React.Fragment>) : <p className="text-center text-gray-500 mt-10">Select a brand</p>}</div></div>}
-                            {activeTab === 'dealers' && <div className="w-full flex flex-col bg-zinc-900 p-6"><div className="flex gap-2 mb-6 max-w-xl mx-auto w-full"><input className="flex-1 bg-black border border-zinc-600 rounded px-4 py-3 text-white" placeholder="New Dealer Name..." value={newDealerName} onChange={e => setNewDealerName(e.target.value)} /><button onClick={handleAddDealer} className="bg-purple-600 hover:bg-purple-500 text-white px-6 py-2 rounded font-bold">ADD DEALER</button></div><div className="flex-1 overflow-y-auto max-w-4xl mx-auto w-full"><div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">{dealers.map(d => (<div key={d} className="bg-black border border-zinc-700 rounded p-4 flex justify-between items-center group hover:border-zinc-500 transition-colors"><span className="text-gray-200 font-bold">{d}</span><button onClick={() => handleDeleteDealer(d)} className="text-zinc-600 hover:text-red-500 p-2"><Icon name="Trash2" size={18} /></button></div>))}</div></div></div>}
-                            {activeTab === 'accessories' && <div className="w-full flex flex-col bg-zinc-900 p-6"><div className="flex gap-2 mb-6 max-w-xl mx-auto w-full"><input className="flex-1 bg-black border border-zinc-600 rounded px-4 py-3 text-white" placeholder="New Accessory..." value={newAccessoryName} onChange={e => setNewAccessoryName(e.target.value)} /><button onClick={handleAddAccessory} className="bg-teal-600 hover:bg-teal-500 text-white px-6 py-2 rounded font-bold">ADD ACCESSORY</button></div><div className="flex-1 overflow-y-auto max-w-4xl mx-auto w-full"><div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">{accessories.map(a => (<div key={a} className="bg-black border border-zinc-700 rounded p-4 flex justify-between items-center group hover:border-zinc-500 transition-colors"><span className="text-gray-200 font-bold">{a}</span><button onClick={() => handleDeleteAccessory(a)} className="text-zinc-600 hover:text-red-500 p-2"><Icon name="Trash2" size={18} /></button></div>))}</div></div></div>}
-                            {activeTab === 'theme' && <div className="w-full flex flex-col bg-zinc-900 p-8 overflow-y-auto"><div className="max-w-3xl mx-auto w-full"><div className="mb-6 flex justify-between items-center"><div><h4 className="text-white font-bold text-lg mb-1">自訂儀表板背景 CUSTOM DASHBOARD THEME</h4><p className="text-gray-400 text-xs">輸入圖片網址 (URL) 即可更換背景。支援 Unsplash, Imgur 等連結。</p></div><button onClick={() => setTheme(DEFAULT_THEME_IMAGES)} className="flex items-center gap-2 px-4 py-2 bg-zinc-800 hover:bg-zinc-700 border border-zinc-600 rounded text-xs text-gray-300"><Icon name="RefreshCcw" size={14} /> 恢復預設 RESET</button></div><div className="grid grid-cols-1 md:grid-cols-2 gap-6">{Object.keys(DEFAULT_THEME_IMAGES).map(key => (<div key={key} className="bg-black border border-zinc-800 p-4 rounded-lg flex flex-col gap-3"><div className="flex justify-between items-center"><label className="text-xs font-bold text-gray-400 block">{key}</label></div><div className="flex gap-3"><div className="w-20 h-20 bg-zinc-900 rounded border border-zinc-700 overflow-hidden flex-shrink-0"><img src={theme[key]} alt={key} className="w-full h-full object-cover" onError={(e) => e.target.style.display = 'none'} onLoad={(e) => e.target.style.display = 'block'} /></div><textarea className="flex-1 bg-zinc-900 border border-zinc-700 rounded p-2 text-xs text-gray-300 break-all resize-none focus:border-blue-500 outline-none" rows={3} value={theme[key]} onChange={e => setTheme(prev => { return { ...prev, [key]: e.target.value }; })} placeholder="https://..." /></div></div>))}</div></div></div>}
-                            {activeTab === 'cloud' && (
-                                <div className="w-full flex flex-col bg-zinc-900 p-8 overflow-y-auto">
-                                    <div className="max-w-2xl mx-auto w-full">
-                                        <div className="mb-6 p-4 bg-green-900/10 border border-green-500/30 rounded-lg">
-                                            <h4 className="text-green-400 font-bold mb-2 flex items-center gap-2"><Icon name="Cloud" size={20} /> Google Firebase Integration</h4>
-                                            <p className="text-gray-400 text-sm mb-2">啟用此功能後，資料將儲存於 Google Cloud，實現多人即時協作。</p>
-                                            {!localStorage.getItem('mastex_firebase_config') && fbConfig.apiKey && (<div className="bg-blue-900/30 border border-blue-500 p-3 rounded mb-4 text-xs text-blue-200 mt-4"><strong>已自動載入預設設定 (Preset Loaded)</strong><br/>系統檢測到您尚未設定，已自動填入共用資料庫連線資訊。點擊下方 "SAVE & RESTART" 即可連線。</div>)}
-                                            <div className="bg-black/50 p-3 rounded border border-zinc-700 text-xs text-gray-400 mt-4"><strong className="text-gray-300 block mb-1">如何取得 Config:</strong><ol className="list-decimal pl-4 space-y-1"><li>進入 Firebase Console</li><li>點擊您的專案 -&gt; 左上角齒輪 -&gt; <strong>專案設定</strong></li><li>捲動到下方 <strong>您的應用程式</strong></li><li>選擇 <strong>Config</strong> 並複製值</li></ol></div>
-                                        </div>
-                                        <div className="space-y-4"><div><label className="text-xs text-gray-500 block mb-1">API Key</label><input className="w-full p-3 rounded bg-black border border-zinc-700 text-white font-mono-tech text-sm" value={fbConfig.apiKey} onChange={e => setFbConfig({ ...fbConfig, apiKey: e.target.value })} /></div><div className="grid grid-cols-2 gap-4"><div><label className="text-xs text-gray-500 block mb-1">Auth Domain</label><input className="w-full p-3 rounded bg-black border border-zinc-700 text-white font-mono-tech text-sm" value={fbConfig.authDomain} onChange={e => setFbConfig({ ...fbConfig, authDomain: e.target.value })} /></div><div><label className="text-xs text-gray-500 block mb-1">Project ID</label><input className="w-full p-3 rounded bg-black border border-zinc-700 text-white font-mono-tech text-sm" value={fbConfig.projectId} onChange={e => setFbConfig({ ...fbConfig, projectId: e.target.value })} /></div></div><div className="grid grid-cols-2 gap-4"><div><label className="text-xs text-gray-500 block mb-1">Storage Bucket</label><input className="w-full p-3 rounded bg-black border border-zinc-700 text-white font-mono-tech text-sm" value={fbConfig.storageBucket} onChange={e => setFbConfig({ ...fbConfig, storageBucket: e.target.value })} /></div><div><label className="text-xs text-gray-500 block mb-1">Messaging Sender ID</label><input className="w-full p-3 rounded bg-black border border-zinc-700 text-white font-mono-tech text-sm" value={fbConfig.messagingSenderId} onChange={e => setFbConfig({ ...fbConfig, messagingSenderId: e.target.value })} /></div></div><div><label className="text-xs text-gray-500 block mb-1">App ID</label><input className="w-full p-3 rounded bg-black border border-zinc-700 text-white font-mono-tech text-sm" value={fbConfig.appId} onChange={e => setFbConfig({ ...fbConfig, appId: e.target.value })} /></div></div><div className="mt-8 flex justify-between items-center border-t border-zinc-800 pt-4"><button onClick={() => setFbConfig({ apiKey: '', authDomain: '', projectId: '', storageBucket: '', messagingSenderId: '', appId: '' })} className="text-red-500 text-sm hover:underline">清除設定 Clear Config</button></div></div>
+                    );
+                }
+                if (activeTab === 'dealers') {
+                    return (
+                        <div className="w-full flex flex-col bg-zinc-900 p-6">
+                            <div className="flex gap-2 mb-6 max-w-xl mx-auto w-full"><input className="flex-1 bg-black border border-zinc-600 rounded px-4 py-3 text-white" placeholder="New Dealer Name..." value={newDealerName} onChange={e => setNewDealerName(e.target.value)} /><button onClick={handleAddDealer} className="bg-purple-600 hover:bg-purple-500 text-white px-6 py-2 rounded font-bold">ADD DEALER</button></div>
+                            <div className="flex-1 overflow-y-auto max-w-4xl mx-auto w-full"><div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">{dealers.map(d => (<div key={d} className="bg-black border border-zinc-700 rounded p-4 flex justify-between items-center group hover:border-zinc-500 transition-colors"><span className="text-gray-200 font-bold">{d}</span><button onClick={() => handleDeleteDealer(d)} className="text-zinc-600 hover:text-red-500 p-2"><Icon name="Trash2" size={18} /></button></div>))}</div></div>
+                        </div>
+                    );
+                }
+                if (activeTab === 'accessories') {
+                    return (
+                        <div className="w-full flex flex-col bg-zinc-900 p-6">
+                            <div className="flex gap-2 mb-6 max-w-xl mx-auto w-full"><input className="flex-1 bg-black border border-zinc-600 rounded px-4 py-3 text-white" placeholder="New Accessory..." value={newAccessoryName} onChange={e => setNewAccessoryName(e.target.value)} /><button onClick={handleAddAccessory} className="bg-teal-600 hover:bg-teal-500 text-white px-6 py-2 rounded font-bold">ADD ACCESSORY</button></div>
+                            <div className="flex-1 overflow-y-auto max-w-4xl mx-auto w-full"><div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">{accessories.map(a => (<div key={a} className="bg-black border border-zinc-700 rounded p-4 flex justify-between items-center group hover:border-zinc-500 transition-colors"><span className="text-gray-200 font-bold">{a}</span><button onClick={() => handleDeleteAccessory(a)} className="text-zinc-600 hover:text-red-500 p-2"><Icon name="Trash2" size={18} /></button></div>))}</div></div>
+                        </div>
+                    );
+                }
+                if (activeTab === 'theme') {
+                    return (
+                        <div className="w-full flex flex-col bg-zinc-900 p-8 overflow-y-auto">
+                            <div className="max-w-3xl mx-auto w-full">
+                                <div className="mb-6 flex justify-between items-center"><div><h4 className="text-white font-bold text-lg mb-1">自訂儀表板背景 CUSTOM DASHBOARD THEME</h4><p className="text-gray-400 text-xs">輸入圖片網址 (URL) 即可更換背景。支援 Unsplash, Imgur 等連結。</p></div><button onClick={() => setTheme(DEFAULT_THEME_IMAGES)} className="flex items-center gap-2 px-4 py-2 bg-zinc-800 hover:bg-zinc-700 border border-zinc-600 rounded text-xs text-gray-300"><Icon name="RefreshCcw" size={14} /> 恢復預設 RESET</button></div>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">{Object.keys(DEFAULT_THEME_IMAGES).map(key => (<div key={key} className="bg-black border border-zinc-800 p-4 rounded-lg flex flex-col gap-3"><div className="flex justify-between items-center"><label className="text-xs font-bold text-gray-400 block">{THEME_LABELS[key]}</label></div><div className="flex gap-3"><div className="w-20 h-20 bg-zinc-900 rounded border border-zinc-700 overflow-hidden flex-shrink-0"><img src={theme[key]} alt={key} className="w-full h-full object-cover" onError={(e) => e.target.style.display = 'none'} onLoad={(e) => e.target.style.display = 'block'} /></div><textarea className="flex-1 bg-zinc-900 border border-zinc-700 rounded p-2 text-xs text-gray-300 break-all resize-none focus:border-blue-500 outline-none" rows={3} value={theme[key]} onChange={e => setTheme(prev => { return { ...prev, [key]: e.target.value }; })} placeholder="https://..." /></div></div>))}</div>
+                            </div>
+                        </div>
+                    );
+                }
+                if (activeTab === 'cloud') {
+                    return (
+                        <div className="w-full flex flex-col bg-zinc-900 p-8 overflow-y-auto">
+                            <div className="max-w-2xl mx-auto w-full">
+                                <div className="mb-6 p-4 bg-green-900/10 border border-green-500/30 rounded-lg">
+                                    <h4 className="text-green-400 font-bold mb-2 flex items-center gap-2"><Icon name="Cloud" size={20} /> Google Firebase Integration</h4>
+                                    <p className="text-gray-400 text-sm mb-2">啟用此功能後，資料將儲存於 Google Cloud，實現多人即時協作。</p>
+                                    {!localStorage.getItem('mastex_firebase_config') && fbConfig.apiKey && (<div className="bg-blue-900/30 border border-blue-500 p-3 rounded mb-4 text-xs text-blue-200 mt-4"><strong>已自動載入預設設定 (Preset Loaded)</strong><br/>系統檢測到您尚未設定，已自動填入共用資料庫連線資訊。點擊下方 "SAVE & RESTART" 即可連線。</div>)}
+                                    <div className="bg-black/50 p-3 rounded border border-zinc-700 text-xs text-gray-400 mt-4"><strong className="text-gray-300 block mb-1">如何取得 Config:</strong><ol className="list-decimal pl-4 space-y-1"><li>進入 Firebase Console</li><li>點擊您的專案 -&gt; 左上角齒輪 -&gt; <strong>專案設定</strong></li><li>捲動到下方 <strong>您的應用程式</strong></li><li>選擇 <strong>Config</strong> 並複製值</li></ol></div>
+                                </div>
+                                <div className="space-y-4"><div><label className="text-xs text-gray-500 block mb-1">API Key</label><input className="w-full p-3 rounded bg-black border border-zinc-700 text-white font-mono-tech text-sm" value={fbConfig.apiKey} onChange={e => setFbConfig({ ...fbConfig, apiKey: e.target.value })} /></div><div className="grid grid-cols-2 gap-4"><div><label className="text-xs text-gray-500 block mb-1">Auth Domain</label><input className="w-full p-3 rounded bg-black border border-zinc-700 text-white font-mono-tech text-sm" value={fbConfig.authDomain} onChange={e => setFbConfig({ ...fbConfig, authDomain: e.target.value })} /></div><div><label className="text-xs text-gray-500 block mb-1">Project ID</label><input className="w-full p-3 rounded bg-black border border-zinc-700 text-white font-mono-tech text-sm" value={fbConfig.projectId} onChange={e => setFbConfig({ ...fbConfig, projectId: e.target.value })} /></div></div><div className="grid grid-cols-2 gap-4"><div><label className="text-xs text-gray-500 block mb-1">Storage Bucket</label><input className="w-full p-3 rounded bg-black border border-zinc-700 text-white font-mono-tech text-sm" value={fbConfig.storageBucket} onChange={e => setFbConfig({ ...fbConfig, storageBucket: e.target.value })} /></div><div><label className="text-xs text-gray-500 block mb-1">Messaging Sender ID</label><input className="w-full p-3 rounded bg-black border border-zinc-700 text-white font-mono-tech text-sm" value={fbConfig.messagingSenderId} onChange={e => setFbConfig({ ...fbConfig, messagingSenderId: e.target.value })} /></div></div><div><label className="text-xs text-gray-500 block mb-1">App ID</label><input className="w-full p-3 rounded bg-black border border-zinc-700 text-white font-mono-tech text-sm" value={fbConfig.appId} onChange={e => setFbConfig({ ...fbConfig, appId: e.target.value })} /></div></div><div className="mt-8 flex justify-between items-center border-t border-zinc-800 pt-4"><button onClick={() => setFbConfig({ apiKey: '', authDomain: '', projectId: '', storageBucket: '', messagingSenderId: '', appId: '' })} className="text-red-500 text-sm hover:underline">清除設定 Clear Config</button></div></div>
                                 </div>
                             )}
                         </div>
